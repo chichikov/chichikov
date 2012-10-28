@@ -43,6 +43,12 @@ public class Board : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		
+		// update engine command respond queue
+		ChessEngineMgr.UpdateReceivedQueue();
+		
+		// process engine command respond
+		ProcessReceivedQueue();		
 	
 	}
 	
@@ -50,6 +56,27 @@ public class Board : MonoBehaviour {
 		
 		// chess engine end
 		ChessEngineMgr.End();
+		
+	}
+	
+	void ProcessEngineRespond( string strRespond ) {
+		
+			
+		
+	}
+		
+	
+	// process engine command respond
+	void ProcessReceivedQueue() {
+		// read one line
+		string strCurRespond = ChessEngineMgr.PopReceivedQueue();
+		while( strCurRespond != null ) {
+			
+			// process one engine respond
+			ProcessEngineRespond( strCurRespond );			
+			
+			strCurRespond = ChessEngineMgr.PopReceivedQueue();
+		}
 		
 	}
 }

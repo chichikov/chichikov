@@ -8,70 +8,96 @@ using System.IO;
 // chess engine manager class
 public class ChessEngineManager {
 	
+	bool bInitProc;
+	
 	// chess engine executive file path
-	private string strChessEnginePath = @"F:\WorkUnity\Unity Projects\Work\WorkU\BattleChessInfinity\ChessEngine\StockFish.exe";	
+	string strProcPath = @"C:\Users\darak\Documents\GitHub\chichikov\ChessEngine\StockFish";	
 	
 	// execute for chess engine process	
-    private Process ChessEngineProc = null;	
+    Process procEngine;	
+	
+	// received command respond queue
+	Queue queReceived;	
 	
 	
-	public ChessEngineManager() {
+	
+	
+	
+	public ChessEngineManager() {		
 		
-		Init();		
-	}
-	
-	~ChessEngineManager() {
-		
-		Destroy();
+		queReceived = new Queue();		
+		procEngine = null;		
+		bInitProc = false;
 	}	
 	
-	void Init() {
-		
-	}
-	
-	void Destroy() {
-		
-	}
-	
-		
-	
+	// interface
 	public IEnumerator Start() {
 		
-		// start chess engine(stockfish)
-		ChessEngineProc = new Process();
-		ChessEngineProc.StartInfo.FileName = strChessEnginePath;    	
-		ChessEngineProc.StartInfo.CreateNoWindow = true;
-
-    	ChessEngineProc.Start();
+		// if engine process is not already running, wait for 2 sec for engine process init
+		if( bInitProc == false ) {			
 		
-		// wait for 2.0 sec for process thread running
-		yield return new WaitForSeconds(2.0f);
+			procEngine = new Process();
+			procEngine.StartInfo.FileName = strProcPath;    	
+			procEngine.StartInfo.CreateNoWindow = true;		
+			
+			// start chess engine(stockfish)
+    		procEngine.Start();
+			
+			// wait for 2.0 sec for process thread running
+			yield return new WaitForSeconds(2.0f);		
+			
+			bInitProc = true;
+			
+			// send command to chess engine
+			// 1, uci
+			Send( "uci" );
+		}	
 		
-		
-		
-		// send command to chess engine
-		// 1, uci
-		//Send( "uci" );
-		
-		
+		// clear received command respond que
+		queReceived.Clear();		
 	}
 	
 	public void End() {
 		
-		ChessEngineProc.Kill();	
-		ChessEngineProc.Close();
-		ChessEngineProc = null;
+		if( bInitProc ) {
+			
+			queReceived.Clear();
+			
+			procEngine.Kill();
+			procEngine.Close();
+			procEngine = null;			
+			
+			bInitProc = false;			
+		}		
 	}
 	
 	public void Send( string strCommand ) {
 		
-		ChessEngineProc.StandardInput.WriteLine( strCommand );
+		procEngine.StandardInput.WriteLine( strCommand );
+	}	
+	
+	public string PopReceivedQueue() {
+		
+		if( queReceived.Count > 0 )
+		{
+			string strRet = queReceived.Dequeue() as string;
+			return strRet;
+		}
+		
+		return null;
 	}
 	
-	public string Receive() {
+	public void UpdateReceivedQueue() {
 		
-		string strRet = ChessEngineProc.StandardOutput.ReadLine();
-		return strRet;
+		if( bInitProc )
+		{
+			while( procEngine.StandardOutput.Peek() >= 0 ) { 			
+
+				string strRecieved = procEngine.StandardOutput.ReadLine();
+				queReceived.Enqueue( strRecieved );
+			}
+		}
 	}
-		
+	
+	// internal	
 }
