@@ -71,6 +71,44 @@ public class CommandBase {
 	
 	
 	// helper function
+	void PrintCommandValue( Queue<string> queStrValue, ref string strTotalCmd ) {
+		
+		if( queStrValue.Count > 0 ) {
+			foreach( string strCurrValue in queStrValue ) {				
+				strTotalCmd += " " + strCurrValue;
+			}	
+		}
+	}
+	
+	void PrintSubCommand( Queue<CommandData> queSubCmd, ref string strTotalCmd ) {
+		
+		if( queSubCmd.Count > 0 ) {
+			foreach( CommandData cmdData in queSubCmd ) {								
+				strTotalCmd += " " + cmdData.strCmd;
+				PrintCommandValue( cmdData.queueStrValue, ref strTotalCmd );
+				PrintSubCommand( cmdData.queueSubCmdData, ref strTotalCmd );	
+			}	
+		}		
+	}
+	
+	public void PrintCommand() {
+		
+		if( commandData != null ) {
+			
+			string strCommand = commandData.strCmd;										
+			
+			PrintCommandValue( commandData.queueStrValue, ref strCommand );
+			
+			PrintSubCommand( commandData.queueSubCmdData, ref strCommand );			
+			
+			UnityEngine.Debug.Log( strCommand );
+		}
+		else {
+			
+			UnityEngine.Debug.Log( "Not Created Command" );
+		}
+	}
+	
 	string[] GetNextTokens( string [] str_tokens ) {
 		
 		if( str_tokens != null && str_tokens.Length > 1 ) {

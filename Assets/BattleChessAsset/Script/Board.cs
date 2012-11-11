@@ -4,7 +4,7 @@ using System.Collections;
 public class Board : MonoBehaviour {	
 	
 	// chess engine management
-	private ChessEngineManager ChessEngineMgr;	
+	private ChessEngineManager chessEngineMgr;	
 	
 	// chess piece prefab reference
 	public Transform[] aWholePiece;		
@@ -18,10 +18,9 @@ public class Board : MonoBehaviour {
 	void Start () {	
 		
 		// chess engine init/start
-		ChessEngineMgr = new ChessEngineManager();
-		ChessEngineMgr.processUI = new ChessEngineManager.ProcessUI( ProcessEngineCommand );
+		chessEngineMgr = new ChessEngineManager();	
 		
-		StartCoroutine( ChessEngineMgr.Start() );		
+		StartCoroutine( chessEngineMgr.Start() );		
 		
 		// init piece
 		
@@ -47,33 +46,32 @@ public class Board : MonoBehaviour {
 	void Update () {		
 		
 		// process engine command respond
-		ProcessReceivedQueue();		
+		ProcessEngineCommand();		
 	
 	}
 	
 	void OnDestroy () {   
 		
 		// chess engine end
-		ChessEngineMgr.End();
+		chessEngineMgr.End();
 		
-	}
-	
-	void ProcessEngineRespond( string strRespond ) {
-		
-		ChessEngineMgr.ProcessCommand( strRespond );		
-	}
-		
+	}	
 	
 	// process engine command respond
-	void ProcessReceivedQueue() {
+	void ProcessEngineCommand() {
 		// read one line
-		string strCurRespond = ChessEngineMgr.PopReceivedQueue();
-		while( strCurRespond != null ) {
+		string strCurCommandLine = chessEngineMgr.PopReceivedQueue();
+		while( strCurCommandLine != null ) {
 			
 			// process one engine respond
-			ProcessEngineRespond( strCurRespond );			
+			EngineToGuiCommand command = chessEngineMgr.ParseCommand( strCurCommandLine );
+			if( command != null ) {				
+				
+				//command.PrintCommand();				
+				ExcuteEngineCommand( command );								
+			}
 			
-			strCurRespond = ChessEngineMgr.PopReceivedQueue();
+			strCurCommandLine = chessEngineMgr.PopReceivedQueue();
 		}
 		
 	}
@@ -81,104 +79,103 @@ public class Board : MonoBehaviour {
 	
 	
 	// 
-	bool ProcessIdCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteIdCommand( CommandBase.CommandData cmdData ) {
 		
 		return false;
 	}
 	
-	bool ProcessUciOkCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteUciOkCommand( CommandBase.CommandData cmdData ) {
 		
 		// send setoption command!!!
 		
 		// send isready command	
-		ChessEngineMgr.Send( "isready" );		
+		chessEngineMgr.Send( "isready" );		
 		
 		return false;
 	}
 	
-	bool ProcessReadyOkCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteReadyOkCommand( CommandBase.CommandData cmdData ) {
 		
 		// send isready command	
-		//ChessEngineMgr.Send( "ucinewgame" );
+		chessEngineMgr.Send( "ucinewgame" );
 		
 		// test move
-		//ChessEngineMgr.Send( "position startpos moves e2e4" );
-		//ChessEngineMgr.Send( "go infinite" );	
+		chessEngineMgr.Send( "position startpos moves e2e4" );
+		chessEngineMgr.Send( "go" );	
 		
 		return false;
 	}
 	
-	bool ProcessCopyProtectionCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteCopyProtectionCommand( CommandBase.CommandData cmdData ) {
 		
 		return false;
 	}
 	
-	bool ProcessRegistrationCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteRegistrationCommand( CommandBase.CommandData cmdData ) {
 		
 		return false;
 	}
 	
-	bool ProcessOptionCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteOptionCommand( CommandBase.CommandData cmdData ) {
 		
 		return false;
 	}
 	
-	bool ProcessInfoCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteInfoCommand( CommandBase.CommandData cmdData ) {
 		
 		return false;
 	}
 	
-	bool ProcessBestMoveCommand( CommandBase.CommandData cmdData ) {
+	bool ExcuteBestMoveCommand( CommandBase.CommandData cmdData ) {
 		
 		return false;
 	}	
 	
 	// delegate function for engine command
-	public bool ProcessEngineCommand( EngineToGuiCommand cmd ) {
+	public bool ExcuteEngineCommand( EngineToGuiCommand cmd ) {		
 		
-		/*
-		//if( cmd.commandData.bInvalidCmd == false ) {
-			switch( cmd.commandData.strCmd ) {
+		if( cmd == null )
+			return false;
+		
+		bool bValidCmd = !cmd.commandData.bInvalidCmd;		
+		if( bValidCmd ) {
+			
+			string strCmd = cmd.commandData.strCmd;
+			
+			switch( strCmd ) {
 					
 				case "id":		
-					break;//return ProcessIdCommand( cmd.commandData );						
+					return ExcuteIdCommand( cmd.commandData );						
 						
-				case "uciok":
-					//return ProcessUciOkCommand( cmd.commandData );						
-					ChessEngineMgr.Send( "isready" );
-				break;
+				case "uciok":	
+					return ExcuteUciOkCommand( cmd.commandData );				
 					
 				case "readyok":		
-					break;//return ProcessReadyOkCommand( cmd.commandData );							
+					return ExcuteReadyOkCommand( cmd.commandData );							
 				
 				case "copyprotection":
-					break;//return ProcessCopyProtectionCommand( cmd.commandData );						
+					return ExcuteCopyProtectionCommand( cmd.commandData );						
 				
 				case "registration":
-					break;//return ProcessRegistrationCommand( cmd.commandData );							
+					return ExcuteRegistrationCommand( cmd.commandData );							
 					
 				case "option":
-					break;//return ProcessOptionCommand( cmd.commandData );							
+					return ExcuteOptionCommand( cmd.commandData );							
 				
 				case "info":
-					break;//return ProcessInfoCommand( cmd.commandData );											
+					return ExcuteInfoCommand( cmd.commandData );											
 				
 				case "bestmove":
-					break;//return ProcessBestMoveCommand( cmd.commandData );							
+					return ExcuteBestMoveCommand( cmd.commandData );							
 					
 				default:								
 					return false;					
-			} // switch				
-		//}		
-		*/
-		
-		//if( cmd.commandData.bInvalidCmd == false ) {
-			if( cmd.strCmdSrc == "uciok" ) {
-				
-				ChessEngineMgr.Send( "isready" );
-			}
-		//}
+			} // switch	
+			
+			return true;
+		}	
 		
 		return false;
-	}
+	}	
+	
 }

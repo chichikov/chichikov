@@ -24,15 +24,10 @@ public class ChessEngineManager {
 	// received command respond queue
 	Queue queReceived;	
 	
+	
+	
 	// engine command parser
-	ChessEngineCmdParser cmdParser;
-	
-	// command processor delegate
-	public delegate bool ProcessUI( EngineToGuiCommand cmd );	
-	public ProcessUI processUI;
-	
-	
-	
+	ChessEngineCmdParser cmdParser;	
 	
 	
 	public ChessEngineManager() {		
@@ -43,8 +38,7 @@ public class ChessEngineManager {
 		//srReader = null;
 		//srErrReader = null;
 		
-		cmdParser = null;
-		processUI = null;
+		cmdParser = null;		
 	}	
 	
 	// interface
@@ -106,8 +100,7 @@ public class ChessEngineManager {
 		procEngine.Close();				
 		procEngine = null;	
 		
-		cmdParser = null;
-		processUI = null;
+		cmdParser = null;		
 	}
 	
 	public void Send( string strUciCmd ) {
@@ -122,7 +115,11 @@ public class ChessEngineManager {
 		
 		if( queReceived.Count > 0 )
 		{
-			string strRet = queReceived.Dequeue() as string;
+			string strRet;
+			lock( queReceived.SyncRoot ) {
+				
+				strRet = queReceived.Dequeue() as string;				
+			}
 			
 			//UnityEngine.Debug.Log(strRet);
 			
@@ -132,18 +129,18 @@ public class ChessEngineManager {
 		return null;
 	}	
 	
-	public bool ProcessCommand( string strCmdLine ) {
+	public EngineToGuiCommand ParseCommand( string strCmdLine ) {
 		
 		if( cmdParser != null ) {			
 			
 			bool bParseSuccess = cmdParser.Parse( strCmdLine );			
 			if( bParseSuccess ) {
 				
-				return processUI( cmdParser.cmd );
+				return cmdParser.cmd;
 			}
 		}
 		
-		return false;
+		return null;
 	}
 
 	
@@ -155,9 +152,15 @@ public class ChessEngineManager {
         // Collect the command output. 
         if (!string.IsNullOrEmpty(outLine.Data))
         {
-			UnityEngine.Debug.Log(outLine.Data);            
+			UnityEngine.Debug.Log(outLine.Data);
+			string strTrimOutLine = outLine.Data;
+			char [] sTrim = { '\r', '\n' };			
+			strTrimOutLine = strTrimOutLine.Trim( sTrim );
 			
-            queReceived.Enqueue( outLine.Data );
+			lock( queReceived.SyncRoot ) {								
+				
+            	queReceived.Enqueue( strTrimOutLine );				
+			}
         }
     }
 	

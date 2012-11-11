@@ -37,16 +37,17 @@
     <Reference Include="System.XML" />
 	<Reference Include="System.Core" />
 	<Reference Include="UnityEngine">
-	  <HintPath>F:/WorkUnity/unity3d/Editor/Data/Managed/UnityEngine.dll</HintPath>
+	  <HintPath>C:/Program Files/Unity/Editor/Data/Managed/UnityEngine.dll</HintPath>
 	</Reference>
 	<Reference Include="UnityEditor">
-	  <HintPath>F:/WorkUnity/unity3d/Editor/Data/Managed/UnityEditor.dll</HintPath>
+	  <HintPath>C:/Program Files/Unity/Editor/Data/Managed/UnityEditor.dll</HintPath>
 	</Reference>
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\BattleChessAsset\Script\Board.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessBoardData.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineCmdParser.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessEngineConfig.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineManager.cs" />
      <None Include="Assets\Standard Assets\Image Effects (Pro Only)\_Sources\Shaders\Tonemapper.shader" />
      <None Include="Assets\Standard Assets\Image Effects (Pro Only)\_Sources\Shaders\NoiseEffectShaderRGB.shader" />
