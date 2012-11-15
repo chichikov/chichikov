@@ -12,15 +12,15 @@ public class Board : MonoBehaviour {
 	// board, 8 x 8, pile x rank
 	private GameObject[,] aBoard;	
 	
+	// particle effect
+	public ParticleSystem selectPiecePSystemPref;	
+	private ParticleSystem selectPiecePSystem;
+	private GameObject selectPiecePSObj;
+	
 	
 	
 	// Use this for initialization
 	void Start () {	
-		
-		// chess engine init/start
-		chessEngineMgr = new ChessEngineManager();	
-		
-		StartCoroutine( chessEngineMgr.Start() );		
 		
 		// init piece
 		
@@ -39,15 +39,50 @@ public class Board : MonoBehaviour {
 					aBoard[i,j] = currPieceObject.gameObject;
 				}
 			}		
-		}	
+		}
+		
+		// particle effect
+		selectPiecePSystem = Instantiate( selectPiecePSystemPref, Vector3.zero, Quaternion.identity ) as ParticleSystem;		
+		selectPiecePSObj = selectPiecePSystem.gameObject;
+		selectPiecePSystem.Stop();
+		
+		// chess engine init/start
+		chessEngineMgr = new ChessEngineManager();	
+		
+		StartCoroutine( chessEngineMgr.Start() );		
 	}
 	
 	// Update is called once per frame
 	void Update () {		
 		
 		// process engine command respond
-		ProcessEngineCommand();		
-	
+		ProcessEngineCommand();	
+		
+		// input
+		// piece selection
+		if( Input.GetMouseButton(0) ) {
+			
+			// collision check
+			RaycastHit hitInfo;
+			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);        
+			if( Physics.Raycast( ray, out hitInfo, 1000 ) ) {
+				
+				if( hitInfo.collider.gameObject.tag != "Board" ) {
+					//hitInfo.collider.gameObject.
+					Vector3 vPos = hitInfo.collider.gameObject.transform.position;
+					Quaternion rot = hitInfo.collider.gameObject.transform.rotation;
+					selectPiecePSObj.transform.position = vPos;
+					selectPiecePSObj.transform.rotation = rot;
+					selectPiecePSystem.Play();				
+				}
+				else {
+					selectPiecePSystem.Stop();
+				}
+			}
+			else {
+				selectPiecePSystem.Stop();
+			}
+		}	
 	}
 	
 	void OnDestroy () {   
@@ -67,7 +102,9 @@ public class Board : MonoBehaviour {
 			EngineToGuiCommand command = chessEngineMgr.ParseCommand( strCurCommandLine );
 			if( command != null ) {				
 				
-				//command.PrintCommand();				
+				//command.PrintCommand();
+				chessEngineMgr.SetConfigCommand( command.commandData );
+				
 				ExcuteEngineCommand( command );								
 			}
 			
@@ -101,6 +138,16 @@ public class Board : MonoBehaviour {
 		
 		// test move
 		chessEngineMgr.Send( "position startpos moves e2e4" );
+		
+		/*
+		if( aBoard[1,4] != null ) {
+			Vector3 vNewPos = new Vector3( aBoard[1,4].transform.position.x, 
+				aBoard[1,4].transform.position.y, 0.5f );
+			
+			aBoard[1,4].transform.position = vNewPos;
+		}
+		*/
+		
 		chessEngineMgr.Send( "go" );	
 		
 		return false;
@@ -172,7 +219,7 @@ public class Board : MonoBehaviour {
 					return false;					
 			} // switch	
 			
-			return true;
+			//return true;
 		}	
 		
 		return false;

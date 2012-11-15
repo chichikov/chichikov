@@ -29,6 +29,8 @@ public class ChessEngineManager {
 	// engine command parser
 	ChessEngineCmdParser cmdParser;	
 	
+	ChessEngineConfig configData;
+	
 	
 	public ChessEngineManager() {		
 		
@@ -39,6 +41,7 @@ public class ChessEngineManager {
 		//srErrReader = null;
 		
 		cmdParser = null;		
+		configData = null;
 	}	
 	
 	// interface
@@ -73,6 +76,7 @@ public class ChessEngineManager {
 		//srErrReader = procEngine.StandardError;
 		
 		cmdParser = new ChessEngineCmdParser();
+		configData = new ChessEngineConfig();
 		
 		// wait for 2.0 sec for process thread running
 		yield return new WaitForSeconds(2.0f);				
@@ -100,7 +104,8 @@ public class ChessEngineManager {
 		procEngine.Close();				
 		procEngine = null;	
 		
-		cmdParser = null;		
+		cmdParser = null;
+		configData = null;
 	}
 	
 	public void Send( string strUciCmd ) {
@@ -134,13 +139,23 @@ public class ChessEngineManager {
 		if( cmdParser != null ) {			
 			
 			bool bParseSuccess = cmdParser.Parse( strCmdLine );			
-			if( bParseSuccess ) {
+			if( bParseSuccess ) {			
 				
 				return cmdParser.cmd;
 			}
 		}
 		
 		return null;
+	}
+	
+	public bool SetConfigCommand( CommandBase.CommandData commandData ) {
+		
+		if( commandData != null ) {
+			
+			return configData.SetConfigCommand( commandData );			
+		}
+		
+		return false;
 	}
 
 	
@@ -163,11 +178,4 @@ public class ChessEngineManager {
 			}
         }
     }
-	
-	/*
-	private void StandardErrorHandler( object objProcess, DataReceivedEventArgs outLine )
-    {
-        // Collect the command output.         
-    }
-    */	
 }
