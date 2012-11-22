@@ -10,7 +10,11 @@ public class Board : MonoBehaviour {
 	public Transform[] aWholePiece;		
 	
 	// board, 8 x 8, pile x rank
-	private GameObject[,] aBoard;	
+	private ChessBoardData.ChessPiece[,] aBoard;
+	
+	// board material
+	private Material matBoard1;	
+	private Material matBoard2;		
 	
 	// particle effect
 	public ParticleSystem selectPiecePSystemPref;	
@@ -20,26 +24,58 @@ public class Board : MonoBehaviour {
 	
 	
 	// Use this for initialization
-	void Start () {	
+	void Start () {				
 		
 		// init piece
 		
 		// init board
-		aBoard = new GameObject[ChessBoardData.nNumPile,ChessBoardData.nNumRank];
+		aBoard = new ChessBoardData.ChessPiece[ChessBoardData.nNumPile,ChessBoardData.nNumRank];
 		for( int i=0; i<ChessBoardData.nNumPile; i++ ){
 			for( int j=0; j<ChessBoardData.nNumRank; j++ ){
-				if( ChessBoardData.aStartPiecePos[i,j] == ChessBoardData.nNone_Piece )
-					aBoard[i,j] = null;
+				if( ChessBoardData.aStartPiecePos[i,j] == ChessBoardData.nNone_Piece ) {
+					
+					aBoard[i,j].SetPiece( null, ChessBoardData.PlayerSide.e_NoneSide );										
+				}
 				else
 				{
-					Vector3 currPos = new Vector3( 0.5f + j * 1.025f - 1.025f * 4.0f, 0.01f, 0.5f + i * 1.025f - 1.025f * 4.0f );					
+					Vector3 currPos = new Vector3( j - 3.5f, 0.0f, i - 3.5f );					
 					
 					Transform currTransform = aWholePiece[ChessBoardData.aStartPiecePos[i,j]];
 					Transform currPieceObject = Instantiate( currTransform, currPos, currTransform.rotation ) as Transform;
-					aBoard[i,j] = currPieceObject.gameObject;
+					
+					
+					if( i == 0 || i == 1 ) {
+						
+						aBoard[i,j].SetPiece( currPieceObject.gameObject, ChessBoardData.PlayerSide.e_White );												
+					}
+					else if( i == 6 || i == 7 ) {
+						
+						aBoard[i,j].SetPiece( currPieceObject.gameObject, ChessBoardData.PlayerSide.e_Black );						
+					}
+					
 				}
 			}		
 		}
+		
+		
+		// piece coloar
+		SetWhiteSidePieceColor( Color.white );
+		SetBlackSidePieceColor( Color.white );
+		
+		
+		// board material
+		if( renderer.materials.Length == 2 ) {
+			
+			matBoard1 = renderer.materials[0];
+			matBoard2 = renderer.materials[1];			
+			
+			Color rgbaWhiteBoard, rgbaBlackBoard;
+			rgbaWhiteBoard = new Color( 1.0f, 1.0f, 1.0f, 1.0f );
+			rgbaBlackBoard = new Color( 0.039f, 0.34f, 0.22f, 1.0f );
+			
+			SetWhiteSideBoardColor( rgbaWhiteBoard );
+			SetBlackSideBoardColor( rgbaBlackBoard );
+		}	
 		
 		// particle effect
 		selectPiecePSystem = Instantiate( selectPiecePSystemPref, Vector3.zero, Quaternion.identity ) as ParticleSystem;		
@@ -91,6 +127,62 @@ public class Board : MonoBehaviour {
 		chessEngineMgr.End();
 		
 	}	
+	
+	
+	
+	
+	
+	
+	// SetBoardColor
+	void SetWhiteSideBoardColor( Color rgbaWhite ) {
+		
+		if( matBoard1 != null ) {
+			
+			matBoard1.SetColor( "_Color", rgbaWhite );					
+		}
+	}
+	
+	void SetBlackSideBoardColor( Color rgbaBlack ) {
+		
+		if( matBoard2 != null ) {			
+			
+			matBoard2.SetColor( "_Color", rgbaBlack );			
+		}
+	}
+	
+	void SetWhiteSidePieceColor( Color rgbaWhite ) {
+		
+		for( int i=0; i<ChessBoardData.nNumPile; i++ ) {
+			for( int j=0; j<ChessBoardData.nNumRank; j++ ) {
+				
+				if( aBoard[i,j].gameObject != null ) {
+					
+					if( aBoard[i,j].playerSide == ChessBoardData.PlayerSide.e_White )
+						aBoard[i,j].gameObject.renderer.material.SetColor( "_Color", rgbaWhite );											
+				}
+			}
+		}		
+	}
+	
+	void SetBlackSidePieceColor( Color rgbaBlack ) {
+		
+		for( int i=0; i<ChessBoardData.nNumPile; i++ ) {
+			for( int j=0; j<ChessBoardData.nNumRank; j++ ) {
+				
+				if( aBoard[i,j].gameObject != null ) {
+					
+					if( aBoard[i,j].playerSide == ChessBoardData.PlayerSide.e_Black )
+						aBoard[i,j].gameObject.renderer.material.SetColor( "_Color", rgbaBlack );	
+				}
+			}
+		}	
+	}
+
+	
+
+	
+	
+	
 	
 	// process engine command respond
 	void ProcessEngineCommand() {

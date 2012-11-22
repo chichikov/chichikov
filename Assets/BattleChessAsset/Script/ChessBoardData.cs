@@ -81,6 +81,20 @@ public class ChessBoardData {
 		{nBlack_LookLeft, nBlack_KnightLeft, nBlack_BishopLeft, nBlack_Queen, nBlack_King, nBlack_BishopRight, nBlack_KnightRight, nBlack_LookRight}
 	};
 	
+	
+	public struct ChessPiece {
+		
+		public GameObject gameObject;
+		public PlayerSide playerSide;	
+		
+		
+		public void SetPiece( GameObject gameObject, PlayerSide playerSide ) {
+			
+			this.gameObject = gameObject;
+			this.playerSide = playerSide;
+		}
+	}
+	
 	static ChessBoardData()	{	
 		
 	}
