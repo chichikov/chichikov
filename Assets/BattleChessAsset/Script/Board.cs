@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
 
+using System.Collections.Generic;
+
 public class Board : MonoBehaviour {	
 	
 	// chess engine management
@@ -19,41 +21,58 @@ public class Board : MonoBehaviour {
 	// particle effect
 	public ParticleSystem selectPiecePSystemPref;	
 	private ParticleSystem selectPiecePSystem;
-	private GameObject selectPiecePSObj;
+	private GameObject selectPiecePSObj;	
+	
+	// selected piece
+	private ChessBoardData.ChessPiece selectPiece;
+	
+	// movable board pos
+	private List<ChessEnginMoveManager.sMove> listCurrMovable;
+	
+	// movable particle effect
+	public ParticleSystem movablePiecePSystemRef;
 	
 	
 	
 	// Use this for initialization
 	void Start () {				
 		
+		listCurrMovable = new List<ChessEnginMoveManager.sMove>();
+		
 		// init piece
+		
 		
 		// init board
 		aBoard = new ChessBoardData.ChessPiece[ChessBoardData.nNumPile,ChessBoardData.nNumRank];
 		for( int i=0; i<ChessBoardData.nNumPile; i++ ){
 			for( int j=0; j<ChessBoardData.nNumRank; j++ ){
-				if( ChessBoardData.aStartPiecePos[i,j] == ChessBoardData.nNone_Piece ) {
+				if( ChessBoardData.aStartPiecePos[i,j] == ChessBoardData.PieceInstanceType.eNone_Piece ) {
 					
-					aBoard[i,j].SetPiece( null, ChessBoardData.PlayerSide.e_NoneSide );										
+					aBoard[i,j].SetPiece( null, ChessBoardData.PlayerSide.e_NoneSide,
+						ChessBoardData.PieceInstanceType.eNone_Piece, i, j );					
 				}
 				else
 				{
 					Vector3 currPos = new Vector3( j - 3.5f, 0.0f, i - 3.5f );					
 					
-					Transform currTransform = aWholePiece[ChessBoardData.aStartPiecePos[i,j]];
+					Transform currTransform = aWholePiece[(int)ChessBoardData.aStartPiecePos[i,j]];
 					Transform currPieceObject = Instantiate( currTransform, currPos, currTransform.rotation ) as Transform;
 					
 					
 					if( i == 0 || i == 1 ) {
 						
-						aBoard[i,j].SetPiece( currPieceObject.gameObject, ChessBoardData.PlayerSide.e_White );												
+						aBoard[i,j].SetPiece( currPieceObject.gameObject, ChessBoardData.PlayerSide.e_White,
+							ChessBoardData.aStartPiecePos[i,j], i, j );												
 					}
 					else if( i == 6 || i == 7 ) {
 						
-						aBoard[i,j].SetPiece( currPieceObject.gameObject, ChessBoardData.PlayerSide.e_Black );						
-					}
-					
+						aBoard[i,j].SetPiece( currPieceObject.gameObject, ChessBoardData.PlayerSide.e_Black,
+							ChessBoardData.aStartPiecePos[i,j], i, j );						
+					}									
 				}
+				
+				ParticleSystem movablePiecePSystem = Instantiate( movablePiecePSystemRef, Vector3.zero, Quaternion.identity ) as ParticleSystem;
+				aBoard[i,j].SetMovableEffect( movablePiecePSystem );
 			}		
 		}
 		
@@ -107,17 +126,20 @@ public class Board : MonoBehaviour {
 					//hitInfo.collider.gameObject.
 					Vector3 vPos = hitInfo.collider.gameObject.transform.position;
 					Quaternion rot = hitInfo.collider.gameObject.transform.rotation;
-					selectPiecePSObj.transform.position = vPos;
-					selectPiecePSObj.transform.rotation = rot;
-					selectPiecePSystem.Play();				
+					
+					SelectPiece( hitInfo.collider.gameObject, vPos, rot );													
 				}
 				else {
-					selectPiecePSystem.Stop();
+					
+					SelectPiece( null, Vector3.zero, Quaternion.identity );										
 				}
 			}
 			else {
-				selectPiecePSystem.Stop();
+				
+				SelectPiece( null, Vector3.zero, Quaternion.identity );								
 			}
+			
+			UpdateCurrMoveable();
 		}	
 	}
 	
@@ -132,6 +154,89 @@ public class Board : MonoBehaviour {
 	
 	
 	
+	
+	//
+	void GetRankPilePos( Vector3 pos ) {		
+		
+		float fHalfBoardWidth = ChessBoardData.fBoardWidth / 2.0f;
+		if( pos.x >= -fHalfBoardWidth && pos.x <= fHalfBoardWidth && 
+			pos.z >= -fHalfBoardWidth && pos.z <= fHalfBoardWidth ) {
+			
+			int nPosX, nPosZ;
+			if( pos.x < 0 )
+			{
+				nPosX = (int)(pos.x - 0.5f);
+				nPosX += 4;
+			}
+			else	
+			{
+				nPosX = (int)(pos.x + 1.0f);
+				nPosX += 3;
+			}			
+			
+			if( pos.z < 0 )	
+			{
+				nPosZ = (int)(pos.z - 0.5f);
+				nPosZ += 4;
+			}
+			else	
+			{
+				nPosZ = (int)(pos.z + 1.0f);
+				nPosZ += 3;
+			}				
+			
+			selectPiece.SetPiece( ref aBoard[nPosZ, nPosX] );			
+		}
+		else {
+			
+			selectPiece.Clear();			
+		}
+	}
+	
+	void SelectPiece( GameObject gameObject, Vector3 pos, Quaternion rot ) {
+		
+		if( gameObject != null ) {
+			
+			selectPiecePSObj.transform.position = pos;
+			selectPiecePSObj.transform.rotation = rot;
+			selectPiecePSystem.Play();		
+			// movable pos	
+			GetRankPilePos( pos );
+		}
+		else {
+			
+			selectPiecePSystem.Stop();
+			// movable pos	
+			selectPiece.Clear();
+		}
+	}
+	
+	void UpdateCurrMoveable() {
+		
+		// previous movable effect stop
+		foreach( ChessBoardData.ChessPiece piece in aBoard ) {		
+			
+			int nRank = 0, nPile = 0;
+			ChessBoardData.ChessPosition.GetPositionIndex( piece.position.pos, ref nRank, ref nPile );
+			aBoard[nPile, nRank].ShowMovableEffect(false);
+		}
+		
+		listCurrMovable.Clear();
+		ChessEnginMoveManager.GetValidateMoveList( aBoard, selectPiece, listCurrMovable );
+		
+		// movable effect start
+		foreach( ChessEnginMoveManager.sMove move in listCurrMovable ) {
+			
+			int nRank = 0, nPile = 0;
+			ChessBoardData.ChessPosition.GetPositionIndex( move.trgPos, ref nRank, ref nPile );
+			
+			if( move.trgPos == ChessBoardData.BoardPosition.InvalidPosition )
+				continue;
+			
+			aBoard[nPile, nRank].ShowMovableEffect(true);
+		}		
+	}
+
 	
 	// SetBoardColor
 	void SetWhiteSideBoardColor( Color rgbaWhite ) {
@@ -176,10 +281,9 @@ public class Board : MonoBehaviour {
 				}
 			}
 		}	
-	}
-
+	}	
 	
-
+	
 	
 	
 	

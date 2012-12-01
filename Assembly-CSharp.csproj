@@ -46,6 +46,7 @@
   <ItemGroup>
      <Compile Include="Assets\BattleChessAsset\Script\Board.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessBoardData.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessEnginMoveManager.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineCmdParser.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineConfig.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineManager.cs" />
