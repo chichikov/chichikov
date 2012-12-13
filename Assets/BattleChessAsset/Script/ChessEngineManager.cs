@@ -5,6 +5,9 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO; 
 
+
+//namespace BattleChess {	
+	
 // chess engine manager class
 public class ChessEngineManager {	
 	
@@ -75,7 +78,7 @@ public class ChessEngineManager {
 		//srReader = procEngine.StandardOutput;
 		//srErrReader = procEngine.StandardError;
 		
-		cmdParser = new ChessEngineCmdParser();
+		cmdParser = new ChessEngineCmdParser() { Cmd = null };
 		configData = new ChessEngineConfig();
 		
 		// wait for 2.0 sec for process thread running
@@ -141,7 +144,7 @@ public class ChessEngineManager {
 			bool bParseSuccess = cmdParser.Parse( strCmdLine );			
 			if( bParseSuccess ) {			
 				
-				return cmdParser.cmd;
+				return cmdParser.Cmd;
 			}
 		}
 		
@@ -179,3 +182,4 @@ public class ChessEngineManager {
         }
     }
 }
+//}

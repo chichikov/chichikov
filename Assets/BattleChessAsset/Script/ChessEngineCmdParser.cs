@@ -2,6 +2,10 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+
+//namespace BattleChess {
+
+
 public class CommandBase {
 	
 	// command parse exception
@@ -27,50 +31,161 @@ public class CommandBase {
 	public class CommandData {
 		
 		// command/value pair
-		public string strCmd;		
+		public string StrCmd { get; set; }		
 		
-		public Queue<string> queueStrValue;		
+		Queue<string> queueStrValue;
+		public Queue<string> QueueStrValue 
+		{ 
+			get {
+				
+				return queueStrValue;
+			}
+			
+			set {
+				
+				queueStrValue = value;
+			}
+		}		
 		
-		// sub command
-		//public CommandData [] aSubCmdData;
-		public Queue<CommandData> queueSubCmdData;
+		// sub command		
+		Queue<CommandData> queueSubCmdData;
+		public Queue<CommandData> QueueSubCmdData { 
+			get {
+				
+				return queueSubCmdData;
+			} 
+			
+			set {
+				
+				queueSubCmdData = value;
+			}
+		}
 		
 		// whether invalid command or not
-		public bool bInvalidCmd;	
+		public bool InvalidCmd { get; set; }		
+		
 		
 		public CommandData() {
 			
-			strCmd = null;			
 			queueStrValue = new Queue<string>();
-		
-			bInvalidCmd = true;
-			
-			//aSubCmdData = null;
 			queueSubCmdData = new Queue<CommandData>();
-		}
+			
+			InvalidCmd = true;
+		}			
 	}
 	
 	
 	
 	// command source line
-	public string strCmdSrc;		
+	public string StrCmdSrc { get; set; }		
 	
 	// command data
-	public CommandData commandData;
+	public CommandData CmdData { get; set; }
 	
 	
-	public CommandBase( string strCommandSrc ) {		
+	
+	
+	// interface
+	// init
+	public void Init( string strCommandSrc )
+	{
+		StrCmdSrc = strCommandSrc;
+		CmdData = new CommandData();		
+	}
+	
+	// parse command line
+	public bool ParseCommand() {		
 		
-		strCmdSrc = strCommandSrc;		
+		try {
+			// split token
+			char[] delimiterChars = { ' ' };
+	        string[] str_tokens = StrCmdSrc.Split(delimiterChars);					
+			
+			// get command token	
+			CmdData.StrCmd = str_tokens[0];				
+			
+			switch( CmdData.StrCmd ) {
+				
+			case "id":		
+				ParseIdCommand( CmdData, str_tokens );		
+			break;
+					
+			case "uciok":
+				ParseUciOkCommand( CmdData, str_tokens );		
+			break;
+				
+			case "readyok":		
+				ParseReadyOkCommand( CmdData, str_tokens );		
+			break;		
+			
+			case "copyprotection":
+				ParseCopyProtectionCommand( CmdData, str_tokens );		
+			break;
+			
+			case "registration":
+				ParseRegistrationCommand( CmdData, str_tokens );			
+			break;
+				
+			case "option":
+				ParseOptionCommand( CmdData, str_tokens );			
+			break;
+			
+			case "info":
+				ParseInfoCommand( CmdData, str_tokens );		
+			break;
+				
+			case "bestmove":
+				ParseBestMoveCommand( CmdData, str_tokens );			
+			break;
+			
+				
+			default:												
+				return false;						
+				
+			} // switch		
+			
+			if( CmdData.InvalidCmd ) {
+				
+				UnityEngine.Debug.Log( "Parsed Unknown Command or Sub Command Error" + " " + CmdData.StrCmd );				
+				return false;
+			}
+			
+			return true;
+			
+		} // switch		
+		catch ( CmdException ex ) {
 		
-		commandData = new CommandData();	
+			UnityEngine.Debug.Log( ex.ToString() );			
+		}
+		finally {
+			
+						
+		}
+		
+		return false;
+	}	
+	
+	// helper function
+	public void PrintCommand() {
+		
+		if( CmdData != null ) {
+			
+			string strCommand = CmdData.StrCmd;										
+			
+			PrintCommandValue( CmdData.QueueStrValue, ref strCommand );
+			
+			PrintSubCommand( CmdData.QueueSubCmdData, ref strCommand );			
+			
+			UnityEngine.Debug.Log( strCommand );
+		}
+		else {
+			
+			UnityEngine.Debug.Log( "Not Created Command" );
+		}
 	}
 	
 	
-	
-	
-	
-	// helper function
+	// 
 	void PrintCommandValue( Queue<string> queStrValue, ref string strTotalCmd ) {
 		
 		if( queStrValue.Count > 0 ) {
@@ -84,30 +199,12 @@ public class CommandBase {
 		
 		if( queSubCmd.Count > 0 ) {
 			foreach( CommandData cmdData in queSubCmd ) {								
-				strTotalCmd += " " + cmdData.strCmd;
-				PrintCommandValue( cmdData.queueStrValue, ref strTotalCmd );
-				PrintSubCommand( cmdData.queueSubCmdData, ref strTotalCmd );	
+				strTotalCmd += " " + cmdData.StrCmd;
+				PrintCommandValue( cmdData.QueueStrValue, ref strTotalCmd );
+				PrintSubCommand( cmdData.QueueSubCmdData, ref strTotalCmd );	
 			}	
 		}		
-	}
-	
-	public void PrintCommand() {
-		
-		if( commandData != null ) {
-			
-			string strCommand = commandData.strCmd;										
-			
-			PrintCommandValue( commandData.queueStrValue, ref strCommand );
-			
-			PrintSubCommand( commandData.queueSubCmdData, ref strCommand );			
-			
-			UnityEngine.Debug.Log( strCommand );
-		}
-		else {
-			
-			UnityEngine.Debug.Log( "Not Created Command" );
-		}
-	}
+	}	
 	
 	string[] GetNextTokens( string [] str_tokens ) {
 		
@@ -214,27 +311,27 @@ public class CommandBase {
 		{
 			// sub command
 			CommandData subCmdData = new CommandData();
-			subCmdData.strCmd = strSubCmd;			
+			subCmdData.StrCmd = strSubCmd;			
 			string strValue = GetTokensToString( str_next_tokens );
-			subCmdData.queueStrValue.Enqueue( strValue );
-			subCmdData.bInvalidCmd = false;			
+			subCmdData.QueueStrValue.Enqueue( strValue );
+			subCmdData.InvalidCmd = false;			
 			
-			cmdData.queueSubCmdData.Enqueue(subCmdData);
+			cmdData.QueueSubCmdData.Enqueue(subCmdData);
 						
-			cmdData.bInvalidCmd = false;
+			cmdData.InvalidCmd = false;
 		}		
 		else if( strSubCmd == "author" )
 		{
 			// sub command
 			CommandData subCmdData = new CommandData();
-			subCmdData.strCmd = strSubCmd;
+			subCmdData.StrCmd = strSubCmd;
 			string strValue = GetTokensToString( str_next_tokens );
-			subCmdData.queueStrValue.Enqueue( strValue );
-			subCmdData.bInvalidCmd = false;			
+			subCmdData.QueueStrValue.Enqueue( strValue );
+			subCmdData.InvalidCmd = false;			
 			
-			cmdData.queueSubCmdData.Enqueue(subCmdData);
+			cmdData.QueueSubCmdData.Enqueue(subCmdData);
 						
-			cmdData.bInvalidCmd = false;
+			cmdData.InvalidCmd = false;
 		}
 		else {
 			
@@ -244,12 +341,12 @@ public class CommandBase {
 	
 	void ParseUciOkCommand( CommandData cmdData, string [] str_tokens ) {		
 		
-		cmdData.bInvalidCmd = false;
+		cmdData.InvalidCmd = false;
 	}
 	
 	void ParseReadyOkCommand( CommandData cmdData, string [] str_tokens ) {		
 		
-		cmdData.bInvalidCmd = false;
+		cmdData.InvalidCmd = false;
 	}
 	
 	void ParseCopyProtectionCommand( CommandData cmdData, string [] str_tokens ) {		
@@ -259,11 +356,11 @@ public class CommandBase {
 			string [] str_next_tokens = GetNextTokens( str_tokens );
 			
 			// value 1, checking, 2, ok, 3, error
-			cmdData.queueStrValue.Clear();				
-			cmdData.queueStrValue.Enqueue( str_next_tokens[0] );
-			cmdData.queueSubCmdData.Clear();
+			cmdData.QueueStrValue.Clear();				
+			cmdData.QueueStrValue.Enqueue( str_next_tokens[0] );
+			cmdData.QueueSubCmdData.Clear();
 			
-			cmdData.bInvalidCmd = false;
+			cmdData.InvalidCmd = false;
 		}
 		else {
 			
@@ -278,11 +375,11 @@ public class CommandBase {
 			string [] str_next_tokens = GetNextTokens( str_tokens );
 			
 			// value 1, checking, 2, ok, 3, error
-			cmdData.queueStrValue.Clear();				
-			cmdData.queueStrValue.Enqueue( str_next_tokens[0] );
-			cmdData.queueSubCmdData.Clear();
+			cmdData.QueueStrValue.Clear();				
+			cmdData.QueueStrValue.Enqueue( str_next_tokens[0] );
+			cmdData.QueueSubCmdData.Clear();
 			
-			cmdData.bInvalidCmd = false;
+			cmdData.InvalidCmd = false;
 		}
 		else {
 			
@@ -302,25 +399,25 @@ public class CommandBase {
 			if( strSubCmd == "name" ) {	
 				
 				CommandData subCmdData = new CommandData();			
-				subCmdData.strCmd = strSubCmd;			
+				subCmdData.StrCmd = strSubCmd;			
 				string strCmdValue;
 				str_next_tokens = GetNextCommandTokens( str_next_tokens, "type", out strCmdValue );
-				subCmdData.queueStrValue.Enqueue( strCmdValue );
-				subCmdData.bInvalidCmd = false;			
+				subCmdData.QueueStrValue.Enqueue( strCmdValue );
+				subCmdData.InvalidCmd = false;			
 				
-				cmdData.queueSubCmdData.Enqueue( subCmdData );
+				cmdData.QueueSubCmdData.Enqueue( subCmdData );
 				
 				strSubCmd = str_next_tokens[0];
 				if( strSubCmd == "type" ) {
 					
 					subCmdData = new CommandData();	
-					subCmdData.strCmd = strSubCmd;				
+					subCmdData.StrCmd = strSubCmd;				
 					str_next_tokens = GetNextTokens( str_next_tokens );				
 					strCmdValue = str_next_tokens[0];				
-					subCmdData.queueStrValue.Enqueue( strCmdValue );
-					subCmdData.bInvalidCmd = false;	
+					subCmdData.QueueStrValue.Enqueue( strCmdValue );
+					subCmdData.InvalidCmd = false;	
 					
-					cmdData.queueSubCmdData.Enqueue( subCmdData );					
+					cmdData.QueueSubCmdData.Enqueue( subCmdData );					
 				}			
 				
 				if( str_next_tokens != null && str_next_tokens.Length > 1 ) {
@@ -330,13 +427,13 @@ public class CommandBase {
 					if( strSubCmd == "default" ) {
 						
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;				
+						subCmdData.StrCmd = strSubCmd;				
 						str_next_tokens = GetNextTokens( str_next_tokens );
 						strCmdValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strCmdValue );
-						subCmdData.bInvalidCmd = false;	
+						subCmdData.QueueStrValue.Enqueue( strCmdValue );
+						subCmdData.InvalidCmd = false;	
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );							
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );							
 					}			
 					
 					if( str_next_tokens != null && str_next_tokens.Length > 1 ) {
@@ -346,34 +443,34 @@ public class CommandBase {
 						if( strSubCmd == "var" ) {
 							
 							subCmdData = new CommandData();
-							subCmdData.strCmd = strSubCmd;				
+							subCmdData.StrCmd = strSubCmd;				
 							str_next_tokens = GetNextTokens( str_next_tokens );
 							strCmdValue = str_next_tokens[0];
-							subCmdData.queueStrValue.Enqueue( strCmdValue );				
-							subCmdData.bInvalidCmd = false;	
+							subCmdData.QueueStrValue.Enqueue( strCmdValue );				
+							subCmdData.InvalidCmd = false;	
 							
 							while( str_next_tokens.Length > 1 ) {
 								
 								str_next_tokens = GetNextTokens( str_next_tokens );
 								str_next_tokens = GetNextTokens( str_next_tokens );	
 								strCmdValue = str_next_tokens[0];
-								subCmdData.queueStrValue.Enqueue( strCmdValue );						
+								subCmdData.QueueStrValue.Enqueue( strCmdValue );						
 							}
 							
-							cmdData.queueSubCmdData.Enqueue( subCmdData );						
+							cmdData.QueueSubCmdData.Enqueue( subCmdData );						
 						}
 						else {
 							
 							if( strSubCmd == "min" ) {
 								
 								subCmdData = new CommandData();
-								subCmdData.strCmd = strSubCmd;				
+								subCmdData.StrCmd = strSubCmd;				
 								str_next_tokens = GetNextTokens( str_next_tokens );
 								strCmdValue = str_next_tokens[0];
-								subCmdData.queueStrValue.Enqueue( strCmdValue );				
-								subCmdData.bInvalidCmd = false;	
+								subCmdData.QueueStrValue.Enqueue( strCmdValue );				
+								subCmdData.InvalidCmd = false;	
 								
-								cmdData.queueSubCmdData.Enqueue( subCmdData );
+								cmdData.QueueSubCmdData.Enqueue( subCmdData );
 								
 								str_next_tokens = GetNextTokens( str_next_tokens );				
 							}
@@ -382,19 +479,19 @@ public class CommandBase {
 							if( strSubCmd == "max" ) {
 								
 								subCmdData = new CommandData();
-								subCmdData.strCmd = strSubCmd;
+								subCmdData.StrCmd = strSubCmd;
 								str_next_tokens = GetNextTokens( str_next_tokens );
 								strCmdValue = str_next_tokens[0];				
-								subCmdData.queueStrValue.Enqueue( strCmdValue );			
-								subCmdData.bInvalidCmd = false;	
+								subCmdData.QueueStrValue.Enqueue( strCmdValue );			
+								subCmdData.InvalidCmd = false;	
 								
-								cmdData.queueSubCmdData.Enqueue( subCmdData );									
+								cmdData.QueueSubCmdData.Enqueue( subCmdData );									
 							}
 						}
 					}
 				}
 				
-				cmdData.bInvalidCmd = false;
+				cmdData.InvalidCmd = false;
 			}
 			else {
 				
@@ -428,48 +525,48 @@ public class CommandBase {
 					case "depth":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );						
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );						
 					}
 					break;
 					
 					case "seldepth":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );								
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );								
 					}
 					break;
 					
 					case "time":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );
 					}
 					break;
 					
 					case "nodes":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );								
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );								
 					}
 					break;
 					
@@ -482,12 +579,12 @@ public class CommandBase {
 					case "multipv":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );					
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );					
 					}
 					break;
 					
@@ -500,96 +597,96 @@ public class CommandBase {
 					case "currmove":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );			
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );			
 					}
 					break;
 					
 					case "currmovenumber":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );					
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );					
 					}
 					break;
 					
 					case "hashfull":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );			
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );			
 					}
 					break;
 					
 					case "nps":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );					
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );					
 					}
 					break;
 					
 					case "tbhits":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );					
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );					
 					}
 					break;
 					
 					case "sbhits":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );				
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );				
 					}
 					break;
 					
 					case "cpuload":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );				
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );				
 					}
 					break;
 					
 					case "string":
 					{
 						subCmdData = new CommandData();
-						subCmdData.strCmd = strSubCmd;
+						subCmdData.StrCmd = strSubCmd;
 						strValue = str_next_tokens[0];
-						subCmdData.queueStrValue.Enqueue( strValue );																
-						subCmdData.bInvalidCmd = false;				
+						subCmdData.QueueStrValue.Enqueue( strValue );																
+						subCmdData.InvalidCmd = false;				
 						
-						cmdData.queueSubCmdData.Enqueue( subCmdData );				
+						cmdData.QueueSubCmdData.Enqueue( subCmdData );				
 					}
 					break;
 					
@@ -617,7 +714,7 @@ public class CommandBase {
 				}
 			}		
 			
-			cmdData.bInvalidCmd = false;
+			cmdData.InvalidCmd = false;
 		}
 		else {
 			
@@ -633,7 +730,7 @@ public class CommandBase {
 			
 			// bestmove <move1> [ ponder <move2> ]
 			string strValue = str_next_tokens[0];
-			cmdData.queueStrValue.Enqueue( strValue );														
+			cmdData.QueueStrValue.Enqueue( strValue );														
 			
 			if( str_next_tokens.Length > 1 ) {
 				// sub command - ponder <move2>		
@@ -644,93 +741,21 @@ public class CommandBase {
 				{
 					// subsub command
 					CommandData subCmdData = new CommandData();			
-					subCmdData.strCmd = strSubCmd;			
+					subCmdData.StrCmd = strSubCmd;			
 					strValue = str_next_tokens[0];
-					subCmdData.queueStrValue.Enqueue( strValue );	
-					subCmdData.bInvalidCmd = false;
+					subCmdData.QueueStrValue.Enqueue( strValue );	
+					subCmdData.InvalidCmd = false;
 					
-					cmdData.queueSubCmdData.Enqueue( subCmdData );
+					cmdData.QueueSubCmdData.Enqueue( subCmdData );
 				}
 			}
 			
-			cmdData.bInvalidCmd = false;			
+			cmdData.InvalidCmd = false;			
 		}
 		else {
 			
 			throw new CmdParseException( "ParseBestMoveCommand() - Invalid Parameter Exception Throw!!!" );						
 		}
-	}
-	
-	// parse command line
-	public bool ParseCommand() {		
-		
-		try {
-			// split token
-			char[] delimiterChars = { ' ' };
-	        string[] str_tokens = strCmdSrc.Split(delimiterChars);					
-			
-			// get command token	
-			commandData.strCmd = str_tokens[0];				
-			
-			switch( commandData.strCmd ) {
-				
-			case "id":		
-				ParseIdCommand( commandData, str_tokens );		
-			break;
-					
-			case "uciok":
-				ParseUciOkCommand( commandData, str_tokens );		
-			break;
-				
-			case "readyok":		
-				ParseReadyOkCommand( commandData, str_tokens );		
-			break;		
-			
-			case "copyprotection":
-				ParseCopyProtectionCommand( commandData, str_tokens );		
-			break;
-			
-			case "registration":
-				ParseRegistrationCommand( commandData, str_tokens );			
-			break;
-				
-			case "option":
-				ParseOptionCommand( commandData, str_tokens );			
-			break;
-			
-			case "info":
-				ParseInfoCommand( commandData, str_tokens );		
-			break;
-				
-			case "bestmove":
-				ParseBestMoveCommand( commandData, str_tokens );			
-			break;
-			
-				
-			default:												
-				return false;						
-				
-			} // switch		
-			
-			if( commandData.bInvalidCmd ) {
-				
-				UnityEngine.Debug.Log( "Parsed Unknown Command or Sub Command Error" + " " + commandData.strCmd );				
-				return false;
-			}
-			
-			return true;
-			
-		} // switch		
-		catch ( CmdException ex ) {
-		
-			UnityEngine.Debug.Log( ex.ToString() );			
-		}
-		finally {
-			
-						
-		}
-		
-		return false;
 	}	
 }
 
@@ -741,10 +766,7 @@ public class CommandBase {
 
 
 
-public class EngineToGuiCommand : CommandBase {
-	
-	public EngineToGuiCommand( string strCommandSrc ) : base( strCommandSrc ) {	
-	}
+public class EngineToGuiCommand : CommandBase {	
 }
 
 
@@ -756,20 +778,16 @@ public class EngineToGuiCommand : CommandBase {
 // engine to gui command
 public class ChessEngineCmdParser {
 	
-	public EngineToGuiCommand cmd;
+	public EngineToGuiCommand Cmd { get; set; }	
 	
-	public ChessEngineCmdParser() {	
+	public bool Parse( string strCommandLine ) {		
 		
-		cmd = null;		
-	}
-	
-	
-	public bool Parse( string strCommandLine ) {
+		Cmd = new EngineToGuiCommand();
+		Cmd.Init( strCommandLine );
 		
-		cmd = null;
-		cmd = new EngineToGuiCommand( strCommandLine );
-		
-		return cmd.ParseCommand();		
+		return Cmd.ParseCommand();		
 	}
 }
+
+//}
 

@@ -44,12 +44,18 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\BattleChessAsset\Script\Board.cs" />
-     <Compile Include="Assets\BattleChessAsset\Script\ChessBoardData.cs" />
-     <Compile Include="Assets\BattleChessAsset\Script\ChessEnginMoveManager.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\BattleChessMain.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessBoard.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessCastling.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessData.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessEnPassant.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineCmdParser.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineConfig.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEngineManager.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessMoveManager.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessPiece.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessPosition.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessUtility.cs" />
      <None Include="Assets\Standard Assets\Image Effects (Pro Only)\_Sources\Shaders\Tonemapper.shader" />
      <None Include="Assets\Standard Assets\Image Effects (Pro Only)\_Sources\Shaders\NoiseEffectShaderRGB.shader" />
      <None Include="Assets\Standard Assets\Image Effects (Pro Only)\_Sources\Shaders\_Antialiasing\FXAAPreset2.shader" />
