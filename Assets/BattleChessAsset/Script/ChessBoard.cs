@@ -28,7 +28,7 @@ public class ChessBoard {
 	List<ChessMoveManager.sMove> listCurrMovable;	
 	
 	// player turn
-	PlayerSide currTurn;	
+	PlayerSide currTurn;
 	
 	// castling
 	ChessCastling currCastlingState;
@@ -42,6 +42,12 @@ public class ChessBoard {
 	// total move
 	int nCurrTotalMove;
 	
+	// user player side
+	public PlayerSide UserPlayerSide { get; set; }
+	
+	// time
+	public int ThinkingTime { get; set; }
+	
 	
 	
 	
@@ -54,7 +60,9 @@ public class ChessBoard {
 	// interface
 	public void Init( BattleChessMain chessMain, Transform[] aPieceRef, ParticleSystem selectPSystemRef, ParticleSystem movablePSystemRef ) {
 		
-		currTurn = PlayerSide.e_White;		
+		currTurn = PlayerSide.e_White;	
+		UserPlayerSide = PlayerSide.e_White;
+		ThinkingTime = 3000;
 		nCurrHalfMove = 0;
 		nCurrTotalMove = 0;
 		
@@ -75,7 +83,7 @@ public class ChessBoard {
 			for( int j=0; j<ChessData.nNumRank; j++ ){
 				if( ChessData.aStartPiecePos[i,j] == PiecePlayerType.eNone_Piece ) {
 					
-					aBoard[i,j].InitPiece( null, PlayerSide.e_NoneSide,
+					aBoard[i,j].Init( null, PlayerSide.e_NoneSide,
 						PiecePlayerType.eNone_Piece, i, j );					
 				}
 				else
@@ -88,12 +96,12 @@ public class ChessBoard {
 					
 					if( i == 0 || i == 1 ) {
 						
-						aBoard[i,j].InitPiece( currPieceObject.gameObject, PlayerSide.e_White,
+						aBoard[i,j].Init( currPieceObject.gameObject, PlayerSide.e_White,
 							ChessData.aStartPiecePos[i,j], i, j );												
 					}
 					else if( i == 6 || i == 7 ) {
 						
-						aBoard[i,j].InitPiece( currPieceObject.gameObject, PlayerSide.e_Black,
+						aBoard[i,j].Init( currPieceObject.gameObject, PlayerSide.e_Black,
 							ChessData.aStartPiecePos[i,j], i, j );						
 					}									
 				}
@@ -130,62 +138,62 @@ public class ChessBoard {
 	public void SelectPiece( GameObject gameObject, Vector3 vPos, Quaternion rot ) {
 		
 		if( gameObject != null ) {			
-			
-			//UnityEngine.Debug.Log( "select" );
-			
+						
 			// movable pos	
 			int nRank = 0, nPile = 0;
 			bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );
 			if( bValidPos ) {
 				
-				PlaySelectEffect( vPos, rot );				
-				selectPiece.InitPiece( aBoard[nPile, nRank] );			
-				return;
+				if( aBoard[nPile, nRank].playerSide == UserPlayerSide ) {
+					
+					PlaySelectEffect( vPos, rot );				
+					selectPiece.CopyFrom( aBoard[nPile, nRank] );			
+					return;
+				}
 			}			
 		}		
 			
 		// movable pos	
 		StopSelectEffect();
-		selectPiece.InitPiece();			
+		selectPiece.Init();			
 	}
 	
 	public bool MoveTo( Vector3 vPos ) {		
 		
-		int nRank = 0, nPile = 0;
-		bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );				
-		if( bValidPos && selectPiece.IsBlank() == false ) {			
-			
-			int nSelRank = 0, nSelPile = 0;
-			selectPiece.position.GetPositionIndex( ref nSelRank, ref nSelPile );			
-			
-			if( IsValidMove( aBoard[nPile, nRank].position, ref currMove ) ) {			
+		if( selectPiece.playerSide == UserPlayerSide ) {
+			int nRank = 0, nPile = 0;
+			bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );				
+			if( bValidPos ) {			
 				
-				aBoard[nPile, nRank].SetPiece( selectPiece );			
-				aBoard[nSelPile, nSelRank].ClearPiece();
+				int nSelRank = 0, nSelPile = 0;
+				selectPiece.position.GetPositionIndex( ref nSelRank, ref nSelPile );			
 				
-				// increase half move and total move
-				if( currMove.IsResetHalfMove() ) {
+				if( IsValidMove( aBoard[nPile, nRank].position, ref currMove ) ) {					
 					
-					nCurrHalfMove = 0;				
-				}
-				else {
+					// increase half move and total move					
+					if( currMove.movePiece.IsBlank() ) {
+						
+						if( selectPiece.playerSide == PlayerSide.e_Black )
+							nCurrTotalMove++;												
+					}
+					else {
+						
+						UnityEngine.Debug.LogError( "MoveTo() Not set Move ChessPiece" );
+						return false;												
+					}
 					
-					nCurrHalfMove++;
-				}
-				
-				if( currMove.movePiece != null ) {
+					if( currMove.IsResetHalfMove() )						
+						nCurrHalfMove = 0;	
+					else						
+						nCurrHalfMove++;					
 					
-					if( currMove.movePiece.playerSide == PlayerSide.e_Black )
-						nCurrTotalMove++;
-				}
-				else {
+					aBoard[nPile, nRank].SetPiece( selectPiece );			
+					aBoard[nSelPile, nSelRank].ClearPiece();
 					
-					UnityEngine.Debug.LogError( "MoveTo() Not set Move ChessPiece" );
-				}
-				
-				return true;
-			}					
-		}	
+					return true;
+				}					
+			}	
+		}
 		
 		return false;
 	}
@@ -255,21 +263,28 @@ public class ChessBoard {
 		string strCastling = currCastlingState.GetFenString();		
 		
 		// en passant target square
-		string strEnPassant = " ";		
-		strEnPassant += currMove.EnPassantTargetSquare.GetFenString();
+		string strEnPassant = currMove.EnPassantTargetSquare.GetFenString();
 		
-		strResFen = strPosFen + strCastling;
+		strResFen = strPosFen + strCastling + strEnPassant;
 		
 		// curr half move count for 50 move rule
 		strResFen += " " + nCurrHalfMove;
 		
 		// total move - if black piece move completed, increse move
-		strResFen += " " + nCurrHalfMove;
+		strResFen += " " + nCurrTotalMove;
 		
 		return strResFen;
 	}
 	
+	public string GetCurrGoCommand() {
 		
+		string strSide = "wtime";
+		if( UserPlayerSide == PlayerSide.e_White )
+			strSide = "btime";
+		
+		string strRetGoCmd = "go " + strSide + " " + ThinkingTime;
+		return strRetGoCmd;
+	}
 	
 	
 	
@@ -372,7 +387,7 @@ public class ChessBoard {
 			
 			if( move.trgPos == chessPosition ) {
 				
-				targetMove = move;
+				targetMove.Set( move );
 				return true;
 			}
 		}

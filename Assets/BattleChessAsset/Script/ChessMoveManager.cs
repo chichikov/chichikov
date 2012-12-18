@@ -43,7 +43,7 @@ public class ChessMoveManager {
 			this.srcPos = srcPos;
 			this.trgPos = trgPos;	
 			
-			this.movePiece = movePiece;
+			this.movePiece.CopyFrom( movePiece );
 			
 			this.EnPassantTargetSquare = new ChessEnPassant() {
 				
@@ -60,7 +60,7 @@ public class ChessMoveManager {
 			this.srcPos = srcPos;
 			this.trgPos = trgPos;	
 			
-			this.movePiece = movePiece;
+			this.movePiece.CopyFrom( movePiece );
 			
 			this.EnPassantTargetSquare = new ChessEnPassant() {
 				
@@ -77,9 +77,21 @@ public class ChessMoveManager {
 			this.srcPos = srcPos;
 			this.trgPos = trgPos;
 			
-			this.movePiece = movePiece;
+			this.movePiece.CopyFrom( movePiece );
 			
 			this.EnPassantTargetSquare = enPassantTrgSquare;
+		}
+		
+		public void Set( sMove move ) {
+			
+			this.moveType = move.moveType;
+			
+			this.srcPos = move.srcPos;
+			this.trgPos = move.trgPos;
+			
+			this.movePiece.CopyFrom( move.movePiece );
+			
+			this.EnPassantTargetSquare = move.EnPassantTargetSquare;
 		}
 		
 		public void Clear() {
@@ -89,7 +101,7 @@ public class ChessMoveManager {
 			this.srcPos.SetPosition( -1, -1 );
 			this.trgPos.SetPosition( -1, -1 );	
 			
-			this.movePiece = null;
+			this.movePiece.ClearPiece();
 			
 			this.EnPassantTargetSquare = new ChessEnPassant() {
 				
@@ -102,7 +114,9 @@ public class ChessMoveManager {
 		// is Increse half move
 		public bool IsResetHalfMove() {
 			
-			if( moveType & ePawn_Move || moveType & eCapture_Move || moveType & eCastling_Move )
+			if( (moveType & MoveType.ePawn_Move) > 0 || 
+				(moveType & MoveType.eCapture_Move) > 0 || 
+				(moveType & MoveType.eCastling_Move) > 0 )
 				return true;
 			return false;
 		}
@@ -182,7 +196,7 @@ public class ChessMoveManager {
 							move.srcPos = srcPos;
 							move.trgPos = movePos;
 						
-							move.movePiece = aBoard[nMovePileIdx, nMoveRankIdx];
+							move.movePiece.CopyFrom( aBoard[nMovePileIdx, nMoveRankIdx] );
 							
 							listRetBoardPos.Add( move );
 						}	
@@ -200,7 +214,7 @@ public class ChessMoveManager {
 							move.srcPos = srcPos;
 							move.trgPos = movePos;
 						
-							move.movePiece = aBoard[nMovePileIdx, nMoveRankIdx];
+							move.movePiece.CopyFrom( aBoard[nMovePileIdx, nMoveRankIdx] );
 						
 							// en passant target move check
 							if( ((int)srcPos.pos / ChessData.nNumRank) == 1  ) {
@@ -237,7 +251,7 @@ public class ChessMoveManager {
 							move.srcPos = srcPos;
 							move.trgPos = movePos;
 						
-							move.movePiece = aBoard[nMovePileIdx, nMoveRankIdx];
+							move.movePiece.CopyFrom( aBoard[nMovePileIdx, nMoveRankIdx] );
 							
 							listRetBoardPos.Add( move );
 						}
@@ -262,7 +276,7 @@ public class ChessMoveManager {
 							move.srcPos = srcPos;
 							move.trgPos = movePos;
 						
-							move.movePiece = aBoard[nMovePileIdx, nMoveRankIdx];
+							move.movePiece.CopyFrom( aBoard[nMovePileIdx, nMoveRankIdx] );
 							
 							listRetBoardPos.Add( move );
 						}
@@ -289,7 +303,7 @@ public class ChessMoveManager {
 									move.srcPos = srcPos;
 									move.trgPos = movePos;
 								
-									move.movePiece = aBoard[nMovePileIdx, nMoveRankIdx];
+									move.movePiece.CopyFrom( aBoard[nMovePileIdx, nMoveRankIdx] );
 									
 									listRetBoardPos.Add( move );
 								}
@@ -317,7 +331,7 @@ public class ChessMoveManager {
 									move.srcPos = srcPos;
 									move.trgPos = movePos;
 								
-									move.movePiece = aBoard[nMovePileIdx, nMoveRankIdx];
+									move.movePiece.CopyFrom( aBoard[nMovePileIdx, nMoveRankIdx] );
 									
 									listRetBoardPos.Add( move );
 								}

@@ -59,17 +59,21 @@ public class BattleChessMain : MonoBehaviour {
 					board.SelectPiece( hitInfo.collider.gameObject, vPos, rot );													
 				}
 				// collision to board
-				else {					
+				else {	
 					
-					// move to blank position			
+					// move to blank position					
 					Vector3 vPos = hitInfo.point;					
 					if( board.MoveTo( vPos ) )
-					{							
-						string strMoveCmd = board.GetCurrMoveCommand();
+					{
+						// move command
+						string strMoveCmd = board.GetCurrMoveCommand();						
+						UnityEngine.Debug.Log( strMoveCmd );						
+						chessEngineMgr.Send( strMoveCmd );
 						
-						UnityEngine.Debug.Log( strMoveCmd );
-						
-						chessEngineMgr.Send( strMoveCmd );							
+						// go command
+						string strGoCmd = board.GetCurrGoCommand();						
+						UnityEngine.Debug.Log( strMoveCmd );						
+						chessEngineMgr.Send( strGoCmd );
 					}
 					
 					board.SelectPiece( null, Vector3.zero, Quaternion.identity );										
@@ -144,7 +148,7 @@ public class BattleChessMain : MonoBehaviour {
 		chessEngineMgr.Send( "ucinewgame" );
 		
 		// test move
-		chessEngineMgr.Send( "position startpos moves e2e4" );
+		//chessEngineMgr.Send( "position startpos moves e2e4" );		
 		
 		/*
 		if( aBoard[1,4] != null ) {
@@ -155,7 +159,7 @@ public class BattleChessMain : MonoBehaviour {
 		}
 		*/
 		
-		chessEngineMgr.Send( "go" );	
+		//chessEngineMgr.Send( "go" );	
 		
 		return false;
 	}

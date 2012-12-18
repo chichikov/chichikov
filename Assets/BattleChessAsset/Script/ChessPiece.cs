@@ -19,7 +19,7 @@ public struct ChessPiece {
 	public ParticleSystem movablePSystem;
 	
 	
-	public void InitPiece() {
+	public void Init() {
 		
 		gameObject = null;		
 		playerSide = PlayerSide.e_NoneSide;
@@ -29,7 +29,7 @@ public struct ChessPiece {
 		bEnPassantCapture = false;
 	}	
 			
-	public void InitPiece( GameObject gameObject, PlayerSide playerSide, 
+	public void Init( GameObject gameObject, PlayerSide playerSide, 
 		PiecePlayerType piecePlayerType, int nPile, int nRank ) {
 		
 		this.gameObject = gameObject;
@@ -40,30 +40,18 @@ public struct ChessPiece {
 		
 		if( this.gameObject != null )
 			this.gameObject.transform.position = this.position.Get3DPosition();
-	}
-	
-	public void InitPiece( ChessPiece chessPiece ) {
-		
-		this.gameObject = chessPiece.gameObject;
-		this.playerSide = chessPiece.playerSide;
-		this.pieceType = chessPiece.pieceType;
-		this.piecePlayerType = chessPiece.piecePlayerType;
-		this.position = chessPiece.position;	
-		
-		if( this.gameObject != null )
-			this.gameObject.transform.position = this.position.Get3DPosition();
-	}
+	}	
 	
 	public void SetPiece( ChessPiece chessPiece ) {
 		
 		this.gameObject = chessPiece.gameObject;
 		this.playerSide = chessPiece.playerSide;
 		this.pieceType = chessPiece.pieceType;
-		this.piecePlayerType = chessPiece.piecePlayerType;					
-		
+		this.piecePlayerType = chessPiece.piecePlayerType;			
+				
 		if( this.gameObject != null )
-			this.gameObject.transform.position = this.position.Get3DPosition();
-	}
+			this.gameObject.transform.position = this.position.Get3DPosition();		
+	}	
 	
 	public void ClearPiece() {
 		
@@ -72,7 +60,18 @@ public struct ChessPiece {
 		pieceType = PieceType.e_None;
 		piecePlayerType = PiecePlayerType.eNone_Piece;						
 		bEnPassantCapture = false;
-	}		
+	}
+	
+	public void CopyFrom( ChessPiece chessPiece ) {
+		
+		this.gameObject = chessPiece.gameObject;
+		this.playerSide = chessPiece.playerSide;
+		this.pieceType = chessPiece.pieceType;
+		this.piecePlayerType = chessPiece.piecePlayerType;
+		this.position = chessPiece.position;	
+	}
+	
+	
 	
 	public void SetMovableEffect( ParticleSystem movablePSystem ) {
 		
@@ -126,7 +125,7 @@ public struct ChessPiece {
 		if( IsBlank() == false && playerSide != otherPlayerSide )
 			return true;
 		return false;			
-	}
+	}	
 }	
 //}
 
