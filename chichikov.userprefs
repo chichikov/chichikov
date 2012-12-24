@@ -6,13 +6,13 @@
       <File FileName="Assets\BattleChessAsset\Script\ChessPosition.cs" Line="1" Column="1" />
       <File FileName="Assets\BattleChessAsset\Script\ChessUtility.cs" Line="1" Column="1" />
       <File FileName="Assets\BattleChessAsset\Script\ChessCastling.cs" Line="1" Column="1" />
-      <File FileName="Assets\BattleChessAsset\Script\ChessEngineCmdParser.cs" Line="1" Column="1" />
-      <File FileName="Assets\BattleChessAsset\Script\ChessMoveManager.cs" Line="1" Column="1" />
+      <File FileName="Assets\BattleChessAsset\Script\ChessEngineCmdParser.cs" Line="188" Column="5" />
+      <File FileName="Assets\BattleChessAsset\Script\ChessMoveManager.cs" Line="10" Column="33" />
       <File FileName="Assets\BattleChessAsset\Script\BattleChessMain.cs" Line="74" Column="47" />
-      <File FileName="Assets\BattleChessAsset\Script\ChessPiece.cs" Line="115" Column="2" />
-      <File FileName="Assets\BattleChessAsset\Script\ChessBoard.cs" Line="278" Column="2" />
+      <File FileName="Assets\BattleChessAsset\Script\ChessPiece.cs" Line="13" Column="31" />
+      <File FileName="Assets\BattleChessAsset\Script\ChessBoard.cs" Line="57" Column="3" />
       <File FileName="Assets\BattleChessAsset\Script\ChessEngineManager.cs" Line="1" Column="1" />
-      <File FileName="Assets\BattleChessAsset\Script\ChessData.cs" Line="79" Column="24" />
+      <File FileName="Assets\BattleChessAsset\Script\ChessData.cs" Line="11" Column="36" />
       <File FileName="Assets\BattleChessAsset\Script\ChessEnPassant.cs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>

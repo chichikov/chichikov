@@ -62,7 +62,7 @@ public class ChessBoard {
 		
 		currTurn = PlayerSide.e_White;	
 		UserPlayerSide = PlayerSide.e_White;
-		ThinkingTime = 3000;
+		ThinkingTime = 18000;
 		nCurrHalfMove = 0;
 		nCurrTotalMove = 0;
 		
