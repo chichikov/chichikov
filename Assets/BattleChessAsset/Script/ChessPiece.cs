@@ -53,13 +53,19 @@ public struct ChessPiece {
 			this.gameObject.transform.position = this.position.Get3DPosition();		
 	}	
 	
-	public void ClearPiece() {
+	public void ClearPiece( bool bDestryGameObject = false ) {		
 		
-		gameObject = null;		
+		if( bDestryGameObject && gameObject != null ) {
+			
+			MonoBehaviour.Destroy(gameObject);
+		}
+		
+		gameObject = null;
+		
 		playerSide = PlayerSide.e_NoneSide;
 		pieceType = PieceType.e_None;
 		piecePlayerType = PiecePlayerType.eNone_Piece;						
-		bEnPassantCapture = false;
+		bEnPassantCapture = false;				
 	}
 	
 	public void CopyFrom( ChessPiece chessPiece ) {

@@ -43,7 +43,7 @@ public class BattleChessMain : MonoBehaviour {
 		
 		// input
 		// piece selection
-		if( Input.GetMouseButtonDown(0) ) {
+		if( Input.GetMouseButtonDown(0) && board.Ready ) {
 			
 			// collision check
 			RaycastHit hitInfo;
@@ -51,30 +51,30 @@ public class BattleChessMain : MonoBehaviour {
 			if( Physics.Raycast( ray, out hitInfo, 1000 ) ) {
 				
 				// collision to piece
-				if( hitInfo.collider.gameObject.tag != "Board" ) {				
+				if( hitInfo.collider.gameObject.tag == "Piece" ) {				
 					
 					Vector3 vPos = hitInfo.collider.gameObject.transform.position;
 					Quaternion rot = hitInfo.collider.gameObject.transform.rotation;
 					
-					board.SelectPiece( hitInfo.collider.gameObject, vPos, rot );													
+					// Capture enemy
+					ChessPiece collisionPiece = board.GetPiece( vPos );					
+					if( collisionPiece.IsEnemy( board.UserPlayerSide ) ) {	
+						
+						Move( vPos );
+						board.SelectPiece( null, Vector3.zero, Quaternion.identity );
+					}
+					else {
+						
+						// my side								
+						board.SelectPiece( hitInfo.collider.gameObject, vPos, rot );					
+					}
 				}
 				// collision to board
-				else {	
+				else if( hitInfo.collider.gameObject.tag == "Board" ) {	
 					
 					// move to blank position					
 					Vector3 vPos = hitInfo.point;					
-					if( board.MoveTo( vPos ) )
-					{
-						// move command
-						string strMoveCmd = board.GetCurrMoveCommand();						
-						UnityEngine.Debug.Log( strMoveCmd );						
-						chessEngineMgr.Send( strMoveCmd );
-						
-						// go command
-						string strGoCmd = board.GetCurrGoCommand();						
-						UnityEngine.Debug.Log( strMoveCmd );						
-						chessEngineMgr.Send( strGoCmd );
-					}
+					Move( vPos );
 					
 					board.SelectPiece( null, Vector3.zero, Quaternion.identity );										
 				}
@@ -97,6 +97,28 @@ public class BattleChessMain : MonoBehaviour {
 	}
 	
 	
+	// helper function
+	void Move( Vector3 vMoveTo ) {
+		
+		if( board.MoveTo( vMoveTo ) )
+		{
+			// move command
+			string strMoveCmd = board.GetCurrMoveCommand();						
+			UnityEngine.Debug.Log( strMoveCmd );						
+			chessEngineMgr.Send( strMoveCmd );
+			
+			// go command
+			string strGoCmd = board.GetCurrGoCommand();						
+			UnityEngine.Debug.Log( strMoveCmd );						
+			chessEngineMgr.Send( strGoCmd );
+			
+			// turn
+			board.CurrTurn = ChessData.GetOppositeSide( board.CurrTurn );
+			
+			// invalidate ready state
+			board.Ready = false;
+		}		
+	}
 	
 	
 	
@@ -139,7 +161,7 @@ public class BattleChessMain : MonoBehaviour {
 		// send isready command	
 		chessEngineMgr.Send( "isready" );		
 		
-		return false;
+		return true;
 	}
 	
 	bool ExcuteReadyOkCommand( CommandBase.CommandData cmdData ) {
@@ -147,21 +169,9 @@ public class BattleChessMain : MonoBehaviour {
 		// send isready command	
 		chessEngineMgr.Send( "ucinewgame" );
 		
-		// test move
-		//chessEngineMgr.Send( "position startpos moves e2e4" );		
+		board.Ready = true;	
 		
-		/*
-		if( aBoard[1,4] != null ) {
-			Vector3 vNewPos = new Vector3( aBoard[1,4].transform.position.x, 
-				aBoard[1,4].transform.position.y, 0.5f );
-			
-			aBoard[1,4].transform.position = vNewPos;
-		}
-		*/
-		
-		//chessEngineMgr.Send( "go" );	
-		
-		return false;
+		return true;
 	}
 	
 	bool ExcuteCopyProtectionCommand( CommandBase.CommandData cmdData ) {
@@ -185,6 +195,36 @@ public class BattleChessMain : MonoBehaviour {
 	}
 	
 	bool ExcuteBestMoveCommand( CommandBase.CommandData cmdData ) {
+		
+		// best move string to rank/pile
+		string strBestMove = cmdData.QueueStrValue.Peek();	
+		
+		//UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - best move string = " + strBestMove );
+		
+		string strSrcPos = strBestMove.Substring(0, 2);
+		string strTrgPos = strBestMove.Substring(2, 2);
+		
+		int nSrcRank, nSrcPile;
+		ChessData.GetStringToRankPile( strSrcPos, out nSrcRank, out nSrcPile );		
+		ChessPosition srcPosition = new ChessPosition( nSrcRank, nSrcPile );
+				
+		int nTrgRank, nTrgPile;
+		ChessData.GetStringToRankPile( strTrgPos, out nTrgRank, out nTrgPile );
+		ChessPosition trgPosition = new ChessPosition( nTrgRank, nTrgPile );
+		
+		//UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - src rank, pile " + nSrcRank + " , " + nSrcPile );
+		//UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - trg rank, pile " + nTrgRank + " , " + nTrgPile );
+		
+		if( board.AIMoveTo( srcPosition, trgPosition ) )
+		{	
+			// turn
+			board.CurrTurn = ChessData.GetOppositeSide( board.CurrTurn );
+			// invalidate ready state
+			board.Ready = true;
+			return true;
+		}
+		
+		UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - Invalid src rank, pile" );
 		
 		return false;
 	}	

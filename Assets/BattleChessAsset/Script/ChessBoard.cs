@@ -11,12 +11,11 @@ public class ChessBoard {
 	
 	// board
 	// 8 x 8, pile x rank
-	ChessPiece[,] aBoard;	
+	public ChessPiece[,] aBoard;	
 	
 	// board material
 	Material matBoard1;	
 	Material matBoard2;	
-	
 	
 	// selected piece
 	ChessPiece selectPiece;			
@@ -25,13 +24,7 @@ public class ChessBoard {
 	//private GameObject selectPiecePSObj;	
 	
 	// movable board pos
-	List<ChessMoveManager.sMove> listCurrMovable;	
-	
-	// player turn
-	PlayerSide currTurn;
-	
-	// castling
-	ChessCastling currCastlingState;
+	List<ChessMoveManager.sMove> listCurrMovable;			
 	
 	// current move, en passant target move
 	ChessMoveManager.sMove currMove;
@@ -48,6 +41,14 @@ public class ChessBoard {
 	// time
 	public int ThinkingTime { get; set; }
 	
+	public bool Ready { get; set; }
+	
+	// player turn
+	public PlayerSide CurrTurn { get; set; }
+	
+	// castling
+	public ChessCastling currCastlingState;
+	
 	
 	
 	
@@ -60,11 +61,13 @@ public class ChessBoard {
 	// interface
 	public void Init( BattleChessMain chessMain, Transform[] aPieceRef, ParticleSystem selectPSystemRef, ParticleSystem movablePSystemRef ) {
 		
-		currTurn = PlayerSide.e_White;	
+		CurrTurn = PlayerSide.e_White;	
 		UserPlayerSide = PlayerSide.e_White;
 		ThinkingTime = 18000;
 		nCurrHalfMove = 0;
 		nCurrTotalMove = 0;
+		
+		Ready = false;
 		
 		currMove = new ChessMoveManager.sMove();
 		currCastlingState = new ChessCastling() {
@@ -158,37 +161,182 @@ public class ChessBoard {
 		selectPiece.Init();			
 	}
 	
+	public ChessPiece GetPiece( Vector3 vPos ) {
+		
+		ChessPiece retPiece = new ChessPiece();
+		// movable pos	
+		int nRank = 0, nPile = 0;
+		bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );
+		if( bValidPos ) {				
+					
+			retPiece.CopyFrom( aBoard[nPile,nRank] );			
+		}
+		
+		return retPiece;
+	}
+	
+	
+	public void UpdateMoveCount() {
+		
+		// increase half move and total move
+		if( CurrTurn == PlayerSide.e_Black )
+			nCurrTotalMove++;					
+		
+		if( currMove.IsResetHalfMove() )						
+			nCurrHalfMove = 0;	
+		else						
+			nCurrHalfMove++;		
+	}
+	
+	public void UpdateCastlingState( ChessPiece piece ) {
+		
+		// disable castling state
+		switch( piece.piecePlayerType ) 						
+		{
+			case PiecePlayerType.eWhite_King:
+			{
+				currCastlingState.CastlingWKSide = CastlingState.eCastling_Disable_State;
+				currCastlingState.CastlingWQSide = CastlingState.eCastling_Disable_State;
+			}
+			break;
+			
+			case PiecePlayerType.eWhite_LookLeft:
+			{
+				currCastlingState.CastlingWQSide = CastlingState.eCastling_Disable_State;
+			}
+			break;
+				
+			case PiecePlayerType.eWhite_LookRight:
+			{
+				currCastlingState.CastlingWKSide = CastlingState.eCastling_Disable_State;
+			}
+			break;
+				
+			case PiecePlayerType.eBlack_King:
+			{
+				currCastlingState.CastlingBKSide = CastlingState.eCastling_Disable_State;
+				currCastlingState.CastlingBQSide = CastlingState.eCastling_Disable_State;
+			}
+			break;
+				
+			case PiecePlayerType.eBlack_LookLeft:
+			{
+				currCastlingState.CastlingBQSide = CastlingState.eCastling_Disable_State;
+			}
+			break;
+				
+			case PiecePlayerType.eBlack_LookRight:
+			{
+				currCastlingState.CastlingBKSide = CastlingState.eCastling_Disable_State;
+			}
+			break;									
+		}		
+	}
+	
+	public void UpdateMove( ref ChessPiece srcPiece, ref ChessPiece trgPiece, ref ChessMoveManager.sMove move ) {
+		
+		UpdateMoveCount();
+		UpdateCastlingState( srcPiece );					
+		
+		// normal move
+		if( ChessMoveManager.IsNormalMove( move.moveType ) ) {			
+			
+			// pawn move
+			if( ChessMoveManager.IsPawnMove( move.moveType ) ) {
+				
+				// promote move
+				if( ChessMoveManager.IsPromoteMove( move.moveType ) ) {
+					
+				}				
+			}
+		}
+		
+		// capture move
+		if( ChessMoveManager.IsCaptureMove( move.moveType ) ) {
+			
+			// pawn move
+			if( ChessMoveManager.IsPawnMove( move.moveType ) ) {
+				
+				// promote move
+				if( ChessMoveManager.IsPromoteMove( move.moveType ) ) {
+					
+				}				
+			}
+			
+			trgPiece.ClearPiece( true );
+		}	
+		
+		
+		// enpassantmove
+		if( ChessMoveManager.IsEnpassantMove( move.moveType ) ) {
+			
+			// pawn move
+			if( ChessMoveManager.IsPawnMove( move.moveType ) ) {				
+							
+			}			
+		}
+		
+		// castling move
+		if( ChessMoveManager.IsCastlingMove( move.moveType ) ) {
+			
+			int nLookRank = 0, nLookPile = 0;
+			move.movePiece.position.GetPositionIndex( ref nLookRank, ref nLookPile );
+			// white king side castling
+			if( ChessMoveManager.IsWhiteKingSideCastlingMove( move.moveType ) ) {
+				
+				ChessPiece lookPiece = aBoard[0,7];				
+				nLookRank = nLookRank - 1;
+				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );			
+				aBoard[0,7].ClearPiece();
+			}				
+			
+			// white Queen side castling
+			if( ChessMoveManager.IsWhiteQueenSideCastlingMove( move.moveType ) ) {
+				
+				ChessPiece lookPiece = aBoard[0,0];				
+				nLookRank = nLookRank + 1;
+				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );	
+				aBoard[0,0].ClearPiece();				
+			}	
+			
+			// black king side castling
+			if( ChessMoveManager.IsBlackKingSideCastlingMove( move.moveType ) ) {
+				
+				ChessPiece lookPiece = aBoard[7, 7];				
+				nLookRank = nLookRank - 1;
+				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );	
+				aBoard[7,7].ClearPiece();
+			}	
+			
+			// black queen side castling
+			if( ChessMoveManager.IsBlackQueenSideCastlingMove( move.moveType ) ) {
+				
+				ChessPiece lookPiece = aBoard[7, 0];				
+				nLookRank = nLookRank + 1;
+				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );	
+				aBoard[7,0].ClearPiece();
+			}	
+		}		
+		
+		
+		// move real board piece
+		trgPiece.SetPiece( srcPiece );			
+		srcPiece.ClearPiece();			
+	}
+	
 	public bool MoveTo( Vector3 vPos ) {		
 		
-		if( selectPiece.playerSide == UserPlayerSide ) {
-			int nRank = 0, nPile = 0;
-			bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );				
+		if( CurrTurn == UserPlayerSide ) {
+			int nTrgRank = 0, nTrgPile = 0;
+			bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nTrgRank, ref nTrgPile );				
 			if( bValidPos ) {			
 				
 				int nSelRank = 0, nSelPile = 0;
 				selectPiece.position.GetPositionIndex( ref nSelRank, ref nSelPile );			
 				
-				if( IsValidMove( aBoard[nPile, nRank].position, ref currMove ) ) {					
+				if( IsValidMove( aBoard[nTrgPile, nTrgRank].position, ref currMove ) ) {									
 					
-					// increase half move and total move					
-					if( currMove.movePiece.IsBlank() ) {
-						
-						if( selectPiece.playerSide == PlayerSide.e_Black )
-							nCurrTotalMove++;												
-					}
-					else {
-						
-						UnityEngine.Debug.LogError( "MoveTo() Not set Move ChessPiece" );
-						return false;												
-					}
-					
-					if( currMove.IsResetHalfMove() )						
-						nCurrHalfMove = 0;	
-					else						
-						nCurrHalfMove++;					
-					
-					aBoard[nPile, nRank].SetPiece( selectPiece );			
-					aBoard[nSelPile, nSelRank].ClearPiece();
+					UpdateMove( ref aBoard[nSelPile, nSelRank], ref aBoard[nTrgPile, nTrgRank], ref currMove );
 					
 					return true;
 				}					
@@ -198,12 +346,52 @@ public class ChessBoard {
 		return false;
 	}
 	
+	// AI Move
+	public bool AIMoveTo( ChessPosition srcPos, ChessPosition trgPos ) {		
+		
+		if( CurrTurn != UserPlayerSide ) {
+			
+			//UnityEngine.Debug.LogError( "AIMoveTo() - current turn = " + CurrTurn );
+			
+			int nSrcRank = 0, nSrcPile = 0;
+			int nTrgRank = 0, nTrgPile = 0;
+			
+			BoardPositionType srcPosType = srcPos.GetPositionIndex( ref nSrcRank, ref nSrcPile );
+			BoardPositionType trgPosType = trgPos.GetPositionIndex( ref nTrgRank, ref nTrgPile );				
+						
+			if( srcPosType > BoardPositionType.eNone && trgPosType > BoardPositionType.eNone &&
+				aBoard[nSrcPile, nSrcRank].IsBlank() == false ) {	
+				
+				//UnityEngine.Debug.LogError( "AIMoveTo() - no blank" );
+				
+				List<ChessMoveManager.sMove> listAiMovable = new List<ChessMoveManager.sMove>();
+				bool bMoveList = ChessMoveManager.GetValidateMoveList( this, ref aBoard[nSrcPile, nSrcRank], listAiMovable );
+				if( bMoveList ) {
+					//UnityEngine.Debug.LogError( "AIMoveTo() - no blank" + " " + bMoveList );
+					ChessMoveManager.sMove aIMove = new ChessMoveManager.sMove();
+					if( IsValidAIMove( trgPos, listAiMovable, ref aIMove ) ) {
+						
+						//UnityEngine.Debug.LogError( "AIMoveTo() - IsValidAIMove()" );					
+						
+						UpdateMove( ref aBoard[nSrcPile, nSrcRank], ref aBoard[nTrgPile, nTrgRank], ref aIMove );
+							
+						return true;					
+					}
+				}
+			}	
+		}
+		
+		UnityEngine.Debug.LogError( "AIMoveTo() - !!!!" );
+		
+		return false;
+	}
+	
 	public void UpdateCurrMoveable() {
 		
 		StopMovableEffect();
 		
 		listCurrMovable.Clear();
-		ChessMoveManager.GetValidateMoveList( aBoard, selectPiece, listCurrMovable );
+		ChessMoveManager.GetValidateMoveList( this, ref selectPiece, listCurrMovable );
 		
 		// movable effect start
 		PlayMovableEffect();			
@@ -247,9 +435,9 @@ public class ChessBoard {
 		
 		// player turn
 		string strTurn;
-		if( currTurn == PlayerSide.e_White )
+		if( CurrTurn == PlayerSide.e_White )
 			strTurn = "w";
-		else if( currTurn == PlayerSide.e_Black )
+		else if( CurrTurn == PlayerSide.e_Black )
 			strTurn = "b";
 		else {
 			
@@ -394,7 +582,22 @@ public class ChessBoard {
 		
 		targetMove.Clear();
 		return false;
-	}	
+	}
+		
+	bool IsValidAIMove( ChessPosition chessPosition, List<ChessMoveManager.sMove> listMove, ref ChessMoveManager.sMove targetMove ) {
+		
+		foreach( ChessMoveManager.sMove move in listMove ) {			
+			
+			if( move.trgPos == chessPosition ) {
+				
+				targetMove.Set( move );
+				return true;
+			}
+		}
+		
+		targetMove.Clear();
+		return false;
+	}
 }
 	
 //}

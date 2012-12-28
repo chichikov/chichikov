@@ -128,6 +128,53 @@ public class ChessData {
 		
 		return pieceFenStringDic[piecePlayerType];
 	}
+	
+	// rank/pile to string
+	public static string GetRankPileToString( int nRank, int nPile ) {			
+		
+		if( nRank >= 0 && nRank < ChessData.nNumRank && nPile >= 0 && nPile < ChessData.nNumPile ) {			
+			
+			char [] aRankPile = new char[2];
+			aRankPile[0] = (char)(nRank + (int)'a');
+			aRankPile[1] = (char)(nPile + (int)'1');
+			
+			string strRet = new string(aRankPile);	
+			
+			return strRet;
+		}		
+		
+		UnityEngine.Debug.LogError( "GetRankPileToString() - invalid nRank, nPile" );
+		return null;
+	}
+	
+	// string to rank/pile
+	public static bool GetStringToRankPile( string strPosition, out int nRank, out int nPile ) {
+		
+		if( strPosition.Length == 2 ) {
+			nRank = strPosition[0] - 'a';
+			nPile = strPosition[1] - '1';
+			
+			//UnityEngine.Debug.Log( "GetStringToRankPile() - strPosition" + nRank + " , " + nPile );
+			
+			return true;
+		}
+		
+		nRank = -1;
+		nPile = -1;
+		
+		UnityEngine.Debug.LogError( "GetStringToRankPile() - invalid strPosition" );
+		
+		return false;
+	}
+	
+	// get oppsite Side
+	public static PlayerSide GetOppositeSide( PlayerSide side ) {
+		
+		if( side == PlayerSide.e_White )
+			return PlayerSide.e_Black;
+		
+		return PlayerSide.e_White;
+	}
 		
 	static ChessData() {
 		

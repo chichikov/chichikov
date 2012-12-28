@@ -44,7 +44,7 @@ public class ChessUtility {
 					return PieceType.e_Pawn;						
 			}
 		}
-		else if( piecePlayerType >= PiecePlayerType.eWhite_King && piecePlayerType <= PiecePlayerType.eWhite_Pawn8 ) {
+		else if( piecePlayerType >= PiecePlayerType.eBlack_King && piecePlayerType <= PiecePlayerType.eBlack_Pawn8 ) {
 			
 			switch( piecePlayerType )
 			{
