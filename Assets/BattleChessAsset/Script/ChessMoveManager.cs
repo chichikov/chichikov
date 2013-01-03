@@ -20,10 +20,14 @@ public class ChessMoveManager {
 		eDirection_Move_LeftDown_Diagonal,
 		eDirection_Move_RightUp_Diagonal,
 		eDirection_Move_RightDown_Diagonal,
-		eDirection_Move_LeftUp_Leap,
-		eDirection_Move_LeftDown_Leap,
-		eDirection_Move_RightUp_Leap,
-		eDirection_Move_RightDown_Leap,	
+		eDirection_Move_Steep_LeftUp_Leap,
+		eDirection_Move_Steep_LeftDown_Leap,
+		eDirection_Move_Steep_RightUp_Leap,
+		eDirection_Move_Steep_RightDown_Leap,
+		eDirection_Move_NonSteep_LeftUp_Leap,
+		eDirection_Move_NonSteep_LeftDown_Leap,
+		eDirection_Move_NonSteep_RightUp_Leap,
+		eDirection_Move_NonSteep_RightDown_Leap,
 	}
 	
 	[Flags]
@@ -35,11 +39,12 @@ public class ChessMoveManager {
 		eEnPassan_Move = 0x04,
 		ePromote_Move = 0x08,		
 		ePawn_Move = 0x10,
-		eCastling_Move = 0x20,
-		eCastling_White_KingSide_Move = 0x40,
-		eCastling_White_QueenSide_Move = 0x80,
-		eCastling_Black_KingSide_Move = 0x100,
-		eCastling_Black_QueenSide_Move = 0x200,
+		ePawn_Two_Move = 0x20,
+		eCastling_Move = 0x40,
+		eCastling_White_KingSide_Move = 0x80,
+		eCastling_White_QueenSide_Move = 0x100,
+		eCastling_Black_KingSide_Move = 0x200,
+		eCastling_Black_QueenSide_Move = 0x400,
 	}	
 	
 	public static bool IsNormalMove( MoveType moveType ) {
@@ -69,6 +74,14 @@ public class ChessMoveManager {
 	public static bool IsPawnMove( MoveType moveType ) {
 		
 		if( (moveType & MoveType.ePawn_Move) > 0 )
+			return true;
+	
+		return false;		
+	}
+	
+	public static bool IsPawnTwoMove( MoveType moveType ) {
+		
+		if( (moveType & MoveType.ePawn_Two_Move) > 0 )
 			return true;
 	
 		return false;		
@@ -130,19 +143,21 @@ public class ChessMoveManager {
 		public ChessPosition srcPos;
 		public ChessPosition trgPos;
 		
-		public ChessPiece movePiece;
+		public ChessPiece trgPiece;
+		public ChessPiece srcPiece;
 		
 		public ChessEnPassant EnPassantTargetSquare { get; set; }
 		
 		//ChessPiece capturePiece;		
-		public sMove( ChessPiece movePiece, MoveType moveType, ChessPosition srcPos, ChessPosition trgPos ) {
+		public sMove( ChessPiece srcPiece, ChessPiece trgPiece, MoveType moveType, ChessPosition srcPos, ChessPosition trgPos ) {
 			
 			this.moveType = moveType;
 			
 			this.srcPos = srcPos;
 			this.trgPos = trgPos;	
 			
-			this.movePiece.CopyFrom( movePiece );
+			this.trgPiece = trgPiece;
+			this.srcPiece = srcPiece;
 			
 			this.EnPassantTargetSquare = new ChessEnPassant() {
 				
@@ -152,14 +167,15 @@ public class ChessMoveManager {
 			};
 		}			
 		
-		public void Set( ChessPiece movePiece, MoveType moveType, ChessPosition srcPos, ChessPosition trgPos ) {
+		public void Set( ChessPiece srcPiece, ChessPiece trgPiece, MoveType moveType, ChessPosition srcPos, ChessPosition trgPos ) {
 			
 			this.moveType = moveType;
 			
 			this.srcPos = srcPos;
 			this.trgPos = trgPos;	
 			
-			this.movePiece.CopyFrom( movePiece );
+			this.trgPiece = trgPiece;
+			this.srcPiece = srcPiece;
 			
 			this.EnPassantTargetSquare = new ChessEnPassant() {
 				
@@ -169,14 +185,15 @@ public class ChessMoveManager {
 			};
 		}	
 		
-		public void Set( ChessPiece movePiece, MoveType moveType, ChessPosition srcPos, ChessPosition trgPos, ChessEnPassant enPassantTrgSquare ) {
+		public void Set( ChessPiece srcPiece, ChessPiece trgPiece, MoveType moveType, ChessPosition srcPos, ChessPosition trgPos, ChessEnPassant enPassantTrgSquare ) {
 			
 			this.moveType = moveType;
 			
 			this.srcPos = srcPos;
 			this.trgPos = trgPos;
 			
-			this.movePiece.CopyFrom( movePiece );
+			this.trgPiece = trgPiece;
+			this.srcPiece = srcPiece;
 			
 			this.EnPassantTargetSquare = enPassantTrgSquare;
 		}
@@ -188,7 +205,8 @@ public class ChessMoveManager {
 			this.srcPos = move.srcPos;
 			this.trgPos = move.trgPos;
 			
-			this.movePiece.CopyFrom( move.movePiece );
+			this.trgPiece = move.trgPiece;
+			this.srcPiece = move.srcPiece;
 			
 			this.EnPassantTargetSquare = move.EnPassantTargetSquare;
 		}
@@ -200,7 +218,8 @@ public class ChessMoveManager {
 			this.srcPos.SetPosition( -1, -1 );
 			this.trgPos.SetPosition( -1, -1 );	
 			
-			this.movePiece.ClearPiece();
+			this.trgPiece.ClearPiece();
+			this.srcPiece.ClearPiece();
 			
 			this.EnPassantTargetSquare = new ChessEnPassant() {
 				
@@ -219,60 +238,60 @@ public class ChessMoveManager {
 				return true;
 			return false;
 		}
-	}	
+	}		
 	
 	// validate move position
-	public static bool GetValidateMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {		
+	public static bool GetValidateMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {		
 		
 		bool bRet = false;
 		
-		if( piece.IsBlank() )
+		if( selSquare.IsBlank() )
 		{
-			UnityEngine.Debug.LogError( "GetValidateMoveList - IsBlank()" );
+			UnityEngine.Debug.LogError( "GetValidateMoveList - selSquare - IsBlank()" );
 			return bRet;	
 		}
 		
-		if( piece.position.IsInvalidPos() )
+		if( selSquare.IsInvalidPos() )
 		{
-			UnityEngine.Debug.LogError( "GetValidateMoveList - IsInvalidPos()" );
+			UnityEngine.Debug.LogError( "GetValidateMoveList - selSquare - IsInvalidPos()" );
 			return bRet;	
 		}
 			
-		switch( piece.pieceType ) {
+		switch( selSquare.piece.pieceType ) {
 			
 			case PieceType.e_King:
 			{
-				bRet = GetKingMoveList( board, ref piece, listRetBoardPos );							
+				bRet = GetKingMoveList( board, selSquare, listRetBoardPos );							
 			}
 			break;
 			
 			case PieceType.e_Queen:
 			{
-				bRet = GetQueenMoveList( board, ref piece, listRetBoardPos );			
+				bRet = GetQueenMoveList( board, selSquare, listRetBoardPos );			
 			}	
 			break;
 			
 			case PieceType.e_Look:
 			{
-				bRet = GetLookMoveList( board, ref piece, listRetBoardPos );			
+				bRet = GetLookMoveList( board, selSquare, listRetBoardPos );			
 			}
 			break;
 			
 			case PieceType.e_Bishop:
 			{
-				bRet = GetBishopMoveList( board, ref piece, listRetBoardPos );
+				bRet = GetBishopMoveList( board, selSquare, listRetBoardPos );
 			}
 			break;
 			
 			case PieceType.e_Knight:
 			{
-				bRet = GetKnightMoveList( board, ref piece, listRetBoardPos );		
+				bRet = GetKnightMoveList( board, selSquare, listRetBoardPos );		
 			}
 			break;
 			
 			case PieceType.e_Pawn:
 			{
-				bRet = GetPawnMoveList( board, ref piece, listRetBoardPos );						
+				bRet = GetPawnMoveList( board, selSquare, listRetBoardPos );						
 			}				
 			break;
 			
@@ -280,14 +299,13 @@ public class ChessMoveManager {
 			{
 			}
 			break;
-		}			
-		
+		}		
 		
 		return bRet;
 	}	
 	
 	
-	public static bool GetPawnMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {				
+	public static bool GetPawnMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {				
 		
 		//UnityEngine.Debug.LogError( "GetPawnMoveList - start" + " " + piece.position + " " + piece.playerSide );
 		
@@ -297,6 +315,9 @@ public class ChessMoveManager {
 		int nMoveRankIdx = 0, nMovePileIdx = 0;
 		
 		ChessPosition movePos = new ChessPosition(srcPos.pos);			
+		int nSrcRankIdx = 0, nSrcPileIdx = 0;
+		movePos.GetPositionIndex( ref nSrcRankIdx, ref nSrcPileIdx );
+		
 		sMove move = new sMove();		
 		
 		// pure move
@@ -328,7 +349,8 @@ public class ChessMoveManager {
 				move.srcPos = srcPos;
 				move.trgPos = movePos;
 			
-				move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+				move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 				
 				listRetBoardPos.Add( move );
 			}	
@@ -349,11 +371,13 @@ public class ChessMoveManager {
 				movePos.GetPositionIndex( ref nMoveRankIdx, ref nMovePileIdx );
 				if(	board.aBoard[nMovePileIdx, nMoveRankIdx].IsBlank() ) {														
 					
-					move.moveType = MoveType.eNormal_Move | MoveType.ePawn_Move;
+					//move.moveType = MoveType.eNormal_Move | MoveType.ePawn_Move;
+					move.moveType = MoveType.eNormal_Move | MoveType.ePawn_Move | MoveType.ePawn_Two_Move ;
 					move.srcPos = srcPos;
 					move.trgPos = movePos;
 				
-					move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+					move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+					move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 				
 					// en passant target move check					
 					move.EnPassantTargetSquare = new ChessEnPassant() {
@@ -362,7 +386,7 @@ public class ChessMoveManager {
 						Available = true
 					};	
 					
-					board.aBoard[nMovePileIdx, nMoveRankIdx].bEnPassantCapture = true;					
+					//board.aBoard[nMovePileIdx, nMoveRankIdx].bEnPassantCapture = true;					
 					
 					listRetBoardPos.Add( move );													
 				}				
@@ -402,7 +426,8 @@ public class ChessMoveManager {
 				move.srcPos = srcPos;
 				move.trgPos = movePos;
 			
-				move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+				move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 				
 				listRetBoardPos.Add( move );
 			}
@@ -439,7 +464,8 @@ public class ChessMoveManager {
 				move.srcPos = srcPos;
 				move.trgPos = movePos;
 			
-				move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+				move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 				
 				listRetBoardPos.Add( move );
 			}
@@ -470,7 +496,8 @@ public class ChessMoveManager {
 						move.srcPos = srcPos;
 						move.trgPos = movePos;
 					
-						move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+						move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+						move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 						
 						listRetBoardPos.Add( move );
 					}
@@ -502,7 +529,8 @@ public class ChessMoveManager {
 						move.srcPos = srcPos;
 						move.trgPos = movePos;
 					
-						move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+						move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+						move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 						
 						listRetBoardPos.Add( move );
 					}
@@ -514,7 +542,7 @@ public class ChessMoveManager {
 	}	
 	
 	
-	public static bool GetKingMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {	
+	public static bool GetKingMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {	
 		
 		ChessPosition srcPos = piece.position;		
 		PlayerSide srcPlayerSide = piece.playerSide;			
@@ -522,6 +550,9 @@ public class ChessMoveManager {
 		int nMoveRankIdx = 0, nMovePileIdx = 0;
 		
 		ChessPosition movePos = new ChessPosition(srcPos.pos);	
+		int nSrcRankIdx = 0, nSrcPileIdx = 0;
+		movePos.GetPositionIndex( ref nSrcRankIdx, ref nSrcPileIdx );
+		
 		sMove move = new sMove();
 		
 		// all(radial) direction one move		
@@ -547,7 +578,8 @@ public class ChessMoveManager {
 						move.srcPos = srcPos;
 						move.trgPos = movePos;
 					
-						move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+						move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+						move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 						
 						listRetBoardPos.Add( move );
 					}
@@ -560,7 +592,8 @@ public class ChessMoveManager {
 						move.srcPos = srcPos;
 						move.trgPos = movePos;
 					
-						move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+						move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+						move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 						
 						listRetBoardPos.Add( move );
 					}
@@ -616,7 +649,8 @@ public class ChessMoveManager {
 							move.srcPos = srcPos;
 							move.trgPos = movePos;
 						
-							move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );						
+							move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+							move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 							
 							listRetBoardPos.Add( move );
 						}
@@ -671,7 +705,8 @@ public class ChessMoveManager {
 							move.srcPos = srcPos;
 							move.trgPos = movePos;
 						
-							move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );						
+							move.trgPiece = board.aBoard[nMovePileIdx, nMoveRankIdx];				
+							move.srcPiece = board.aBoard[nSrcPileIdx, nSrcRankIdx];
 							
 							listRetBoardPos.Add( move );
 						}
@@ -683,24 +718,24 @@ public class ChessMoveManager {
 		return true;
 	}
 	
-	public static bool GetQueenMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {		
+	public static bool GetQueenMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {		
 		
 		// up
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Up );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Up );
 		// down
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Down );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Down );
 		// left
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Left );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Left );
 		// right
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Right );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Right );
 		// left-up - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftUp_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftUp_Diagonal );
 		// left-down - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftDown_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftDown_Diagonal );
 		// right-up - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_RightUp_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_RightUp_Diagonal );
 		// right-down - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_RightDown_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_RightDown_Diagonal );
 		
 		if( listRetBoardPos.Count > 0 )
 			return true;
@@ -708,16 +743,16 @@ public class ChessMoveManager {
 		return false;
 	}
 	
-	public static bool GetLookMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {		
+	public static bool GetLookMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {		
 		
 		// up
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Up );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Up );
 		// down
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Down );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Down );
 		// left
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Left );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Left );
 		// right
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_Right );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Right );
 		
 		if( listRetBoardPos.Count > 0 )
 			return true;
@@ -725,16 +760,16 @@ public class ChessMoveManager {
 		return false;
 	}
 	
-	public static bool GetBishopMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {		
+	public static bool GetBishopMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {		
 		
 		// left-up - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftUp_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftUp_Diagonal );
 		// left-down - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftDown_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftDown_Diagonal );
 		// right-up - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_RightUp_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_RightUp_Diagonal );
 		// right-down - diagonal
-		GetStraightMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_RightDown_Diagonal );
+		GetStraightMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_RightDown_Diagonal );
 		
 		if( listRetBoardPos.Count > 0 )
 			return true;
@@ -742,16 +777,25 @@ public class ChessMoveManager {
 		return false;
 	}
 	
-	public static bool GetKnightMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos ) {	
+	public static bool GetKnightMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos ) {	
 		
-		// left-up - diagonal
-		GetLeapMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftUp_Leap );
-		// left-down - diagonal
-		GetLeapMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_LeftDown_Leap );
-		// right-up - diagonal
-		GetLeapMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_RightUp_Leap );
-		// right-down - diagonal
-		GetLeapMoveList( board, ref piece, listRetBoardPos, MoveDirectionType.eDirection_Move_RightDown_Leap );
+		// left-up - steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Steep_LeftUp_Leap );
+		// left-down - steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Steep_LeftDown_Leap );
+		// right-up - steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Steep_RightUp_Leap );
+		// right-down - steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_Steep_RightDown_Leap );
+		
+		// left-up - non-steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_NonSteep_LeftUp_Leap );
+		// left-down - on-steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_NonSteep_LeftDown_Leap );
+		// right-up - on-steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_NonSteep_RightUp_Leap );
+		// right-down - on-steep diagonal
+		GetLeapMoveList( board, selSquare, listRetBoardPos, MoveDirectionType.eDirection_Move_NonSteep_RightDown_Leap );
 		
 		if( listRetBoardPos.Count > 0 )
 			return true;
@@ -882,38 +926,66 @@ public class ChessMoveManager {
 			}
 			break;
 			
-			case MoveDirectionType.eDirection_Move_LeftUp_Leap:
+			case MoveDirectionType.eDirection_Move_Steep_LeftUp_Leap:
 			{
 				nNextRank = -1;
 				nNextPile = 2;
 			}
 			break;
 				
-			case MoveDirectionType.eDirection_Move_LeftDown_Leap:
+			case MoveDirectionType.eDirection_Move_Steep_LeftDown_Leap:
 			{
 				nNextRank = -1;
 				nNextPile = -2;
 			}
 			break;
 				
-			case MoveDirectionType.eDirection_Move_RightUp_Leap:
+			case MoveDirectionType.eDirection_Move_Steep_RightUp_Leap:
 			{
 				nNextRank = 1;
 				nNextPile = 2;
 			}
 			break;
 				
-			case MoveDirectionType.eDirection_Move_RightDown_Leap:
+			case MoveDirectionType.eDirection_Move_Steep_RightDown_Leap:
 			{
 				nNextRank = 1;
 				nNextPile = -2;
+			}
+			break;
+			
+			case MoveDirectionType.eDirection_Move_NonSteep_LeftUp_Leap:
+			{
+				nNextRank = -2;
+				nNextPile = 1;
+			}
+			break;
+				
+			case MoveDirectionType.eDirection_Move_NonSteep_LeftDown_Leap:
+			{
+				nNextRank = -2;
+				nNextPile = -1;
+			}
+			break;
+				
+			case MoveDirectionType.eDirection_Move_NonSteep_RightUp_Leap:
+			{
+				nNextRank = 2;
+				nNextPile = 1;
+			}
+			break;
+				
+			case MoveDirectionType.eDirection_Move_NonSteep_RightDown_Leap:
+			{
+				nNextRank = 2;
+				nNextPile = -1;
 			}
 			break;
 		}	
 	}
 	
 	// stright line move
-	public static bool GetStraightMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos, MoveDirectionType moveDirection ) {	
+	public static bool GetStraightMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos, MoveDirectionType moveDirection ) {	
 		
 		ChessPosition srcPos = piece.position;		
 		PlayerSide srcPlayerSide = piece.playerSide;			
@@ -921,6 +993,9 @@ public class ChessMoveManager {
 		int nMoveRankIdx = 0, nMovePileIdx = 0;
 		
 		ChessPosition movePos = new ChessPosition(srcPos.pos);	
+		int nSrcRankIdx = 0, nSrcPileIdx = 0;
+		movePos.GetPositionIndex( ref nSrcRankIdx, ref nSrcPileIdx );
+		
 		sMove move = new sMove();
 		
 		// all(radial) direction one move		
@@ -953,7 +1028,8 @@ public class ChessMoveManager {
 					move.srcPos = srcPos;
 					move.trgPos = movePos;
 				
-					move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+					move.trgPiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+					move.srcPiece.CopyFrom( board.aBoard[nSrcPileIdx, nSrcRankIdx] );
 					
 					listRetBoardPos.Add( move );					
 				}				
@@ -966,7 +1042,8 @@ public class ChessMoveManager {
 					move.srcPos = srcPos;
 					move.trgPos = movePos;
 				
-					move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+					move.trgPiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+					move.srcPiece.CopyFrom( board.aBoard[nSrcPileIdx, nSrcRankIdx] );
 					
 					listRetBoardPos.Add( move );
 					
@@ -987,7 +1064,7 @@ public class ChessMoveManager {
 	
 	
 	// leap move
-	public static bool GetLeapMoveList( ChessBoard board, ref ChessPiece piece, List<sMove> listRetBoardPos, MoveDirectionType moveDirection ) {	
+	public static bool GetLeapMoveList( ChessBoard board, ChessBoardSquare selSquare, List<sMove> listRetBoardPos, MoveDirectionType moveDirection ) {	
 		
 		ChessPosition srcPos = piece.position;		
 		PlayerSide srcPlayerSide = piece.playerSide;			
@@ -995,6 +1072,9 @@ public class ChessMoveManager {
 		int nMoveRankIdx = 0, nMovePileIdx = 0;
 		
 		ChessPosition movePos = new ChessPosition(srcPos.pos);	
+		int nSrcRankIdx = 0, nSrcPileIdx = 0;
+		movePos.GetPositionIndex( ref nSrcRankIdx, ref nSrcPileIdx );
+		
 		sMove move = new sMove();
 		
 		// all(radial) direction one move		
@@ -1019,7 +1099,8 @@ public class ChessMoveManager {
 				move.srcPos = srcPos;
 				move.trgPos = movePos;
 			
-				move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.trgPiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.srcPiece.CopyFrom( board.aBoard[nSrcPileIdx, nSrcRankIdx] );
 				
 				listRetBoardPos.Add( move );
 				
@@ -1034,7 +1115,8 @@ public class ChessMoveManager {
 				move.srcPos = srcPos;
 				move.trgPos = movePos;
 			
-				move.movePiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.trgPiece.CopyFrom( board.aBoard[nMovePileIdx, nMoveRankIdx] );
+				move.srcPiece.CopyFrom( board.aBoard[nSrcPileIdx, nSrcRankIdx] );
 				
 				listRetBoardPos.Add( move );
 				

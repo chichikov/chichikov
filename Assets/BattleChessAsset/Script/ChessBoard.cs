@@ -11,17 +11,17 @@ public class ChessBoard {
 	
 	// board
 	// 8 x 8, pile x rank
-	public ChessPiece[,] aBoard;	
+	public ChessBoardSquare[,] aBoardSqure;	
+	
+	public List<ChessPiece> listPiece;
 	
 	// board material
 	Material matBoard1;	
 	Material matBoard2;	
 	
-	// selected piece
-	ChessPiece selectPiece;			
-	
-	ParticleSystem selectPiecePSystem;
-	//private GameObject selectPiecePSObj;	
+	// selected square
+	ChessBoardSquare selectSquare;		
+	ParticleSystem selectPiecePSystem;	
 	
 	// movable board pos
 	List<ChessMoveManager.sMove> listCurrMovable;			
@@ -61,6 +61,7 @@ public class ChessBoard {
 	// interface
 	public void Init( BattleChessMain chessMain, Transform[] aPieceRef, ParticleSystem selectPSystemRef, ParticleSystem movablePSystemRef ) {
 		
+		// etc property		
 		CurrTurn = PlayerSide.e_White;	
 		UserPlayerSide = PlayerSide.e_White;
 		ThinkingTime = 18000;
@@ -69,6 +70,7 @@ public class ChessBoard {
 		
 		Ready = false;
 		
+		// move
 		currMove = new ChessMoveManager.sMove();
 		currCastlingState = new ChessCastling() {
 			
@@ -81,13 +83,23 @@ public class ChessBoard {
 		listCurrMovable = new List<ChessMoveManager.sMove>();
 		
 		// init board
-		aBoard = new ChessPiece[ChessData.nNumPile,ChessData.nNumRank];
+		// piece list
+		listPiece = new List<ChessPiece>();		
+		aBoardSqure = new ChessBoardSquare[ChessData.nNumPile,ChessData.nNumRank];
+		
+		ChessPiece currPiece = null;
 		for( int i=0; i<ChessData.nNumPile; i++ ){
-			for( int j=0; j<ChessData.nNumRank; j++ ){
+			for( int j=0; j<ChessData.nNumRank; j++ ){				
+				
+				// movable square effect Particle System
+				ParticleSystem movablePiecePSystem = MonoBehaviour.Instantiate( movablePSystemRef, Vector3.zero, Quaternion.identity ) as ParticleSystem;
+				
 				if( ChessData.aStartPiecePos[i,j] == PiecePlayerType.eNone_Piece ) {
 					
-					aBoard[i,j].Init( null, PlayerSide.e_NoneSide,
-						PiecePlayerType.eNone_Piece, i, j );					
+					currPiece = new ChessPiece( null, PlayerSide.e_NoneSide, PiecePlayerType.eNone_Piece );
+					listPiece.Add( currPiece );
+					
+					aBoardSqure[nCurrPile,nCurrRank] = new ChessBoardSquare( currPiece, movablePiecePSystem, i, j );							
 				}
 				else
 				{
@@ -97,20 +109,21 @@ public class ChessBoard {
 					Transform currPieceObject = MonoBehaviour.Instantiate( currTransform, currPos, currTransform.rotation ) as Transform;
 					
 					
-					if( i == 0 || i == 1 ) {
+					if( i == 0 || i == 1 ) {																						
 						
-						aBoard[i,j].Init( currPieceObject.gameObject, PlayerSide.e_White,
-							ChessData.aStartPiecePos[i,j], i, j );												
+						currPiece = new ChessPiece( currPieceObject.gameObject, PlayerSide.e_White,	ChessData.aStartPiecePos[i,j] );
+						listPiece.Add( currPiece );
+						
+						aBoardSqure[i,j] = new ChessBoardSquare( currPiece, movablePiecePSystem, i, j );
 					}
-					else if( i == 6 || i == 7 ) {
+					else if( i == 6 || i == 7 ) {						
 						
-						aBoard[i,j].Init( currPieceObject.gameObject, PlayerSide.e_Black,
-							ChessData.aStartPiecePos[i,j], i, j );						
+						currPiece = new ChessPiece( currPieceObject.gameObject, PlayerSide.e_Black,	ChessData.aStartPiecePos[i,j] );
+						listPiece.Add( currPiece );
+						
+						aBoardSqure[i,j] = new ChessBoardSquare( currPiece, movablePiecePSystem, i, j );
 					}									
-				}
-				
-				ParticleSystem movablePiecePSystem = MonoBehaviour.Instantiate( movablePSystemRef, Vector3.zero, Quaternion.identity ) as ParticleSystem;
-				aBoard[i,j].SetMovableEffect( movablePiecePSystem );
+				}				
 			}		
 		}
 		
@@ -134,47 +147,65 @@ public class ChessBoard {
 		}	
 		
 		// particle effect
+		selectSquare = null;
 		selectPiecePSystem = MonoBehaviour.Instantiate( selectPSystemRef, Vector3.zero, Quaternion.identity ) as ParticleSystem;				
 		selectPiecePSystem.Stop();
 	}
 	
-	public void SelectPiece( GameObject gameObject, Vector3 vPos, Quaternion rot ) {
+	public void SelectSquare( ChessBoardSquare selSquare ) {
 		
-		if( gameObject != null ) {			
+		if( selSquare != null && selSquare.IsBlank() == false ) {									
 						
-			// movable pos	
-			int nRank = 0, nPile = 0;
-			bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );
-			if( bValidPos ) {
+			if( selSquare.piece.playerSide == UserPlayerSide ) {
 				
-				if( aBoard[nPile, nRank].playerSide == UserPlayerSide ) {
-					
-					PlaySelectEffect( vPos, rot );				
-					selectPiece.CopyFrom( aBoard[nPile, nRank] );			
-					return;
-				}
-			}			
+				PlaySelectEffect( selSquare.piece.gameObject.transform.position, selSquare.piece.gameObject.transform.rotation );				
+				selectSquare = selSquare;		
+				return;
+			}
+						
 		}		
 			
 		// movable pos	
 		StopSelectEffect();
-		selectPiece.Init();			
+		selectSquare = null;			
 	}
 	
-	public ChessPiece GetPiece( Vector3 vPos ) {
+	public ChessPiece GetPiece( Vector3 vPos ) {	
 		
-		ChessPiece retPiece = new ChessPiece();
 		// movable pos	
 		int nRank = 0, nPile = 0;
 		bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );
 		if( bValidPos ) {				
 					
-			retPiece.CopyFrom( aBoard[nPile,nRank] );			
+			if( aBoardSquare[nPile,nRank].IsBlank() == false ) {
+			
+				return aBoardSquare[nPile,nRank].piece;				
+			}
 		}
 		
-		return retPiece;
+		return null;
 	}
 	
+	public ChessBoardSquare GetSquare( Vector3 vPos, bool bExistPiece ) {	
+		
+		// movable pos	
+		int nRank = 0, nPile = 0;
+		bool bValidPos = ChessPosition.GetRankPilePos( vPos, ref nRank, ref nPile );
+		if( bValidPos ) {				
+			
+			if( bExistPiece ) {
+				
+				if( aBoardSquare[nPile,nRank].IsBlank() == false ) {
+					
+					return aBoardSquare[nPile,nRank];
+				}
+			}
+			else
+				return aBoardSquare[nPile,nRank];					
+		}
+		
+		return null;
+	}	
 	
 	public void UpdateMoveCount() {
 		
@@ -233,7 +264,7 @@ public class ChessBoard {
 		}		
 	}
 	
-	public void UpdateMove( ref ChessPiece srcPiece, ref ChessPiece trgPiece, ref ChessMoveManager.sMove move ) {
+	public void UpdateMove( ChessPiece srcPiece, ChessPiece trgPiece, ref ChessMoveManager.sMove move ) {
 		
 		UpdateMoveCount();
 		UpdateCastlingState( srcPiece );					
@@ -243,6 +274,12 @@ public class ChessBoard {
 			
 			// pawn move
 			if( ChessMoveManager.IsPawnMove( move.moveType ) ) {
+				
+				// two square move
+				if( ChessMoveManager.IsPawnTwoMove( move.moveType ) ) {					
+					
+					srcPiece.bEnPassantCapture = true;					
+				}				
 				
 				// promote move
 				if( ChessMoveManager.IsPromoteMove( move.moveType ) ) {
@@ -280,14 +317,14 @@ public class ChessBoard {
 		if( ChessMoveManager.IsCastlingMove( move.moveType ) ) {
 			
 			int nLookRank = 0, nLookPile = 0;
-			move.movePiece.position.GetPositionIndex( ref nLookRank, ref nLookPile );
+			move.trgPiece.position.GetPositionIndex( ref nLookRank, ref nLookPile );
 			// white king side castling
 			if( ChessMoveManager.IsWhiteKingSideCastlingMove( move.moveType ) ) {
 				
 				ChessPiece lookPiece = aBoard[0,7];				
 				nLookRank = nLookRank - 1;
 				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );			
-				aBoard[0,7].ClearPiece();
+				lookPiece.ClearPiece();
 			}				
 			
 			// white Queen side castling
@@ -296,7 +333,7 @@ public class ChessBoard {
 				ChessPiece lookPiece = aBoard[0,0];				
 				nLookRank = nLookRank + 1;
 				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );	
-				aBoard[0,0].ClearPiece();				
+				lookPiece.ClearPiece();				
 			}	
 			
 			// black king side castling
@@ -305,7 +342,7 @@ public class ChessBoard {
 				ChessPiece lookPiece = aBoard[7, 7];				
 				nLookRank = nLookRank - 1;
 				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );	
-				aBoard[7,7].ClearPiece();
+				lookPiece.ClearPiece();
 			}	
 			
 			// black queen side castling
@@ -314,14 +351,14 @@ public class ChessBoard {
 				ChessPiece lookPiece = aBoard[7, 0];				
 				nLookRank = nLookRank + 1;
 				aBoard[nLookPile, nLookRank].SetPiece( lookPiece );	
-				aBoard[7,0].ClearPiece();
+				lookPiece.ClearPiece();
 			}	
 		}		
 		
 		
 		// move real board piece
 		trgPiece.SetPiece( srcPiece );			
-		srcPiece.ClearPiece();			
+		srcPiece.ClearPiece();		
 	}
 	
 	public bool MoveTo( Vector3 vPos ) {		
@@ -336,7 +373,7 @@ public class ChessBoard {
 				
 				if( IsValidMove( aBoard[nTrgPile, nTrgRank].position, ref currMove ) ) {									
 					
-					UpdateMove( ref aBoard[nSelPile, nSelRank], ref aBoard[nTrgPile, nTrgRank], ref currMove );
+					UpdateMove( aBoard[nSelPile, nSelRank], aBoard[nTrgPile, nTrgRank], ref currMove );
 					
 					return true;
 				}					
@@ -365,7 +402,7 @@ public class ChessBoard {
 				//UnityEngine.Debug.LogError( "AIMoveTo() - no blank" );
 				
 				List<ChessMoveManager.sMove> listAiMovable = new List<ChessMoveManager.sMove>();
-				bool bMoveList = ChessMoveManager.GetValidateMoveList( this, ref aBoard[nSrcPile, nSrcRank], listAiMovable );
+				bool bMoveList = ChessMoveManager.GetValidateMoveList( this, aBoard[nSrcPile, nSrcRank], listAiMovable );
 				if( bMoveList ) {
 					//UnityEngine.Debug.LogError( "AIMoveTo() - no blank" + " " + bMoveList );
 					ChessMoveManager.sMove aIMove = new ChessMoveManager.sMove();
@@ -373,7 +410,7 @@ public class ChessBoard {
 						
 						//UnityEngine.Debug.LogError( "AIMoveTo() - IsValidAIMove()" );					
 						
-						UpdateMove( ref aBoard[nSrcPile, nSrcRank], ref aBoard[nTrgPile, nTrgRank], ref aIMove );
+						UpdateMove( aBoard[nSrcPile, nSrcRank], aBoard[nTrgPile, nTrgRank], ref aIMove );
 							
 						return true;					
 					}
@@ -391,7 +428,7 @@ public class ChessBoard {
 		StopMovableEffect();
 		
 		listCurrMovable.Clear();
-		ChessMoveManager.GetValidateMoveList( this, ref selectPiece, listCurrMovable );
+		ChessMoveManager.GetValidateMoveList( this, selectSquare, listCurrMovable );
 		
 		// movable effect start
 		PlayMovableEffect();			
@@ -502,10 +539,10 @@ public class ChessBoard {
 		for( int i=0; i<ChessData.nNumPile; i++ ) {
 			for( int j=0; j<ChessData.nNumRank; j++ ) {
 				
-				if( aBoard[i,j].gameObject != null ) {
+				if( aBoardSqure[i,j].IsBlank() == false ) {
 					
-					if( aBoard[i,j].playerSide == PlayerSide.e_White )
-						aBoard[i,j].gameObject.renderer.material.SetColor( "_Color", rgbaWhite );											
+					if( aBoardSqure[i,j].piece.playerSide == PlayerSide.e_White )
+						aBoardSqure[i,j].piece.gameObject.renderer.material.SetColor( "_Color", rgbaWhite );											
 				}
 			}
 		}		
@@ -516,10 +553,10 @@ public class ChessBoard {
 		for( int i=0; i<ChessData.nNumPile; i++ ) {
 			for( int j=0; j<ChessData.nNumRank; j++ ) {
 				
-				if( aBoard[i,j].gameObject != null ) {
+				if( aBoardSqure[i,j].IsBlank() == false ) {
 					
-					if( aBoard[i,j].playerSide == PlayerSide.e_Black )
-						aBoard[i,j].gameObject.renderer.material.SetColor( "_Color", rgbaBlack );	
+					if( aBoardSqure[i,j].piece.playerSide == PlayerSide.e_Black )
+						aBoardSqure[i,j].piece.gameObject.renderer.material.SetColor( "_Color", rgbaBlack );	
 				}
 			}
 		}	
@@ -550,22 +587,17 @@ public class ChessBoard {
 	void StopMovableEffect() {
 		
 		// previous movable effect stop
-		foreach( ChessPiece piece in aBoard ) {		
+		foreach( ChessBoardSquare square in aBoardSquare ) {					
 			
-			int nRank = 0, nPile = 0;
-			piece.position.GetPositionIndex( ref nRank, ref nPile );
-			aBoard[nPile, nRank].ShowMovableEffect(false);
+			square.ShowMovableEffect(false);
 		}		
 	}
 	
 	void PlayMovableEffect() {
 		
-		foreach( ChessMoveManager.sMove move in listCurrMovable ) {
+		foreach( ChessMoveManager.sMove move in listCurrMovable ) {					
 			
-			int nRank = 0, nPile = 0;
-			move.trgPos.GetPositionIndex( ref nRank, ref nPile );			
-			
-			aBoard[nPile, nRank].ShowMovableEffect(true);
+			move.trgSquare.ShowMovableEffect(true);
 		}	
 	}
 	

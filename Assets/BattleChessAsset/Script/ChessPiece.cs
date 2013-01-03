@@ -4,7 +4,7 @@ using System.Collections;
 
 //namespace BattleChess {	
 	
-public struct ChessPiece {
+public class ChessPiece {
 	
 	public GameObject gameObject;
 	
@@ -19,7 +19,7 @@ public struct ChessPiece {
 	public ParticleSystem movablePSystem;
 	
 	
-	public void Init() {
+	public ChessPiece() {
 		
 		gameObject = null;		
 		playerSide = PlayerSide.e_NoneSide;
@@ -29,14 +29,16 @@ public struct ChessPiece {
 		bEnPassantCapture = false;
 	}	
 			
-	public void Init( GameObject gameObject, PlayerSide playerSide, 
+	public ChessPiece( GameObject gameObject, PlayerSide playerSide, 
 		PiecePlayerType piecePlayerType, int nPile, int nRank ) {
 		
 		this.gameObject = gameObject;
 		this.playerSide = playerSide;
 		this.pieceType = ChessUtility.GetPieceType( piecePlayerType );
 		this.piecePlayerType = piecePlayerType;
-		this.position.SetPosition( nRank, nPile );
+		this.position.SetPosition( nRank, nPile );		
+		
+		this.bEnPassantCapture = false;
 		
 		if( this.gameObject != null )
 			this.gameObject.transform.position = this.position.Get3DPosition();
@@ -47,7 +49,8 @@ public struct ChessPiece {
 		this.gameObject = chessPiece.gameObject;
 		this.playerSide = chessPiece.playerSide;
 		this.pieceType = chessPiece.pieceType;
-		this.piecePlayerType = chessPiece.piecePlayerType;			
+		this.piecePlayerType = chessPiece.piecePlayerType;
+		this.bEnPassantCapture = chessPiece.bEnPassantCapture;
 				
 		if( this.gameObject != null )
 			this.gameObject.transform.position = this.position.Get3DPosition();		
@@ -65,8 +68,8 @@ public struct ChessPiece {
 		playerSide = PlayerSide.e_NoneSide;
 		pieceType = PieceType.e_None;
 		piecePlayerType = PiecePlayerType.eNone_Piece;						
-		bEnPassantCapture = false;				
-	}
+		bEnPassantCapture = false;		
+	}		
 	
 	public void CopyFrom( ChessPiece chessPiece ) {
 		
@@ -74,7 +77,8 @@ public struct ChessPiece {
 		this.playerSide = chessPiece.playerSide;
 		this.pieceType = chessPiece.pieceType;
 		this.piecePlayerType = chessPiece.piecePlayerType;
-		this.position = chessPiece.position;	
+		this.position = chessPiece.position;
+		this.bEnPassantCapture = chessPiece.bEnPassantCapture;
 	}
 	
 	

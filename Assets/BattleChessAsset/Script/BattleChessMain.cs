@@ -57,16 +57,24 @@ public class BattleChessMain : MonoBehaviour {
 					Quaternion rot = hitInfo.collider.gameObject.transform.rotation;
 					
 					// Capture enemy
-					ChessPiece collisionPiece = board.GetPiece( vPos );					
-					if( collisionPiece.IsEnemy( board.UserPlayerSide ) ) {	
-						
-						Move( vPos );
-						board.SelectPiece( null, Vector3.zero, Quaternion.identity );
+					ChessBoardSquare collisionSqaure = board.GetSquare( vPos, true );					
+					if( collisionSqaure != null ) {
+						if( collisionSqaure.piece.IsEnemy( board.UserPlayerSide ) ) {	
+							
+							Move( vPos );
+							board.SelectSquare( null );
+						}
+						else {
+							
+							// my side								
+							board.SelectSquare( collisionSqaure );					
+						}
 					}
 					else {
 						
-						// my side								
-						board.SelectPiece( hitInfo.collider.gameObject, vPos, rot );					
+						board.SelectSquare( null );
+						
+						UnityEngine.Debug.LogError( "Update() - Invalid Chess Piece" );
 					}
 				}
 				// collision to board
@@ -76,13 +84,13 @@ public class BattleChessMain : MonoBehaviour {
 					Vector3 vPos = hitInfo.point;					
 					Move( vPos );
 					
-					board.SelectPiece( null, Vector3.zero, Quaternion.identity );										
+					board.SelectSquare( null );										
 				}
 			}
 			// extracollision
 			else {				
 				
-				board.SelectPiece( null, Vector3.zero, Quaternion.identity );								
+				board.SelectSquare( null );								
 			}
 			
 			board.UpdateCurrMoveable();
@@ -109,7 +117,7 @@ public class BattleChessMain : MonoBehaviour {
 			
 			// go command
 			string strGoCmd = board.GetCurrGoCommand();						
-			UnityEngine.Debug.Log( strMoveCmd );						
+			UnityEngine.Debug.Log( strGoCmd );						
 			chessEngineMgr.Send( strGoCmd );
 			
 			// turn

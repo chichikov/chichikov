@@ -46,6 +46,7 @@
   <ItemGroup>
      <Compile Include="Assets\BattleChessAsset\Script\BattleChessMain.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessBoard.cs" />
+     <Compile Include="Assets\BattleChessAsset\Script\ChessBoardSquare.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessCastling.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessData.cs" />
      <Compile Include="Assets\BattleChessAsset\Script\ChessEnPassant.cs" />
