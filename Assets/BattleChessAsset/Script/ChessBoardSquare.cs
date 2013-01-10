@@ -13,15 +13,16 @@ public class ChessBoardSquare {
 	public ChessBoardSquare() {
 		
 		piece = null;		
-		position.pos = BoardPosition.InvalidPosition;
+		position = new ChessPosition(-1, -1);
 		movablePSystem = null;
 	}	
 			
 	public ChessBoardSquare( ChessPiece piece, ParticleSystem moveablePSystem, int nPile, int nRank ) {
 		
-		this.position.SetPosition( nRank, nPile );
+		this.position = new ChessPosition( nRank, nPile );
 		this.piece = piece;	
-		this.piece.SetPosition( this.position.Get3DPosition() );
+		if( this.piece != null )
+			this.piece.SetPosition( this.position.Get3DPosition() );
 		
 		SetMovableEffect( moveablePSystem );
 	}	
@@ -29,35 +30,36 @@ public class ChessBoardSquare {
 	public void SetPiece( ChessPiece chessPiece ) {
 		
 		piece = chessPiece;
-		piece.SetPosition( this.position.Get3DPosition() );			
+		if( piece != null )
+			piece.SetPosition( this.position.Get3DPosition() );			
 	}	
 	
-	public void ClearPiece() {				
+	public void ClearPiece( bool bClearGameObject = false ) {				
 		
 		if( IsBlank() )
 			return;
-			
-		piece.Clear();
-	}		
+		
+		if( bClearGameObject )
+			piece.Clear( true );
+		
+		piece = null;
+	}
 	
 	
 	
 	
 	public void SetMovableEffect( ParticleSystem movablePSystem ) {
 		
-		if( position.pos == BoardPosition.InvalidPosition )
+		if( position.IsInvalidPos() )
 			return;					
 		
 		this.movablePSystem = movablePSystem;							
-		this.movablePSystem.Stop();
-		
-		int nRank = 0, nPile = 0;
-		ChessPosition.GetPositionIndex( position.pos, ref nRank, ref nPile );			
+		this.movablePSystem.Stop();			
 		
 		Vector3 pos = Vector3.zero;
-		pos.x = nRank - 3.5f;
+		pos.x = position.nRank - 3.5f;
 		pos.y = 0.01f;
-		pos.z = nPile - 3.5f;
+		pos.z = position.nPile - 3.5f;
 		Quaternion rot = Quaternion.identity;
 		
 		this.movablePSystem.gameObject.transform.position = pos;
@@ -88,6 +90,14 @@ public class ChessBoardSquare {
 		if( piece == null )
 			return true;
 		return false;			
+	}	
+	
+	public bool IsEnemy( PlayerSide otherPlayerSide ) {
+		
+		if( IsBlank() )
+			return false;
+		
+		return piece.IsEnemy( otherPlayerSide );			
 	}	
 	
 	public bool IsInvalidPos() {

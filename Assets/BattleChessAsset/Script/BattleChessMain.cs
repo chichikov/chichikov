@@ -53,8 +53,7 @@ public class BattleChessMain : MonoBehaviour {
 				// collision to piece
 				if( hitInfo.collider.gameObject.tag == "Piece" ) {				
 					
-					Vector3 vPos = hitInfo.collider.gameObject.transform.position;
-					Quaternion rot = hitInfo.collider.gameObject.transform.rotation;
+					Vector3 vPos = hitInfo.collider.gameObject.transform.position;				
 					
 					// Capture enemy
 					ChessBoardSquare collisionSqaure = board.GetSquare( vPos, true );					
@@ -84,6 +83,7 @@ public class BattleChessMain : MonoBehaviour {
 					Vector3 vPos = hitInfo.point;					
 					Move( vPos );
 					
+					//UnityEngine.Debug.LogError( "Update() - Board Clicked" );
 					board.SelectSquare( null );										
 				}
 			}
@@ -213,17 +213,30 @@ public class BattleChessMain : MonoBehaviour {
 		string strTrgPos = strBestMove.Substring(2, 2);
 		
 		int nSrcRank, nSrcPile;
-		ChessData.GetStringToRankPile( strSrcPos, out nSrcRank, out nSrcPile );		
-		ChessPosition srcPosition = new ChessPosition( nSrcRank, nSrcPile );
+		ChessData.GetStringToRankPile( strSrcPos, out nSrcRank, out nSrcPile );				
+		if( ChessPosition.IsInvalidPositionIndex(nSrcRank, nSrcPile) ) {
+			
+			UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - Invalid src rank, pile" );
+			return false;
+		}
 				
 		int nTrgRank, nTrgPile;
-		ChessData.GetStringToRankPile( strTrgPos, out nTrgRank, out nTrgPile );
-		ChessPosition trgPosition = new ChessPosition( nTrgRank, nTrgPile );
+		ChessData.GetStringToRankPile( strTrgPos, out nTrgRank, out nTrgPile );		
+		
+		if( ChessPosition.IsInvalidPositionIndex(nTrgRank, nTrgPile) ) {
+			
+			UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - Invalid src rank, pile" );
+			return false;
+		}
+		
+		ChessBoardSquare srcSquare, trgSquare;
+		srcSquare = board.aBoardSquare[nSrcPile, nSrcRank];
+		trgSquare = board.aBoardSquare[nTrgPile, nTrgRank];
 		
 		//UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - src rank, pile " + nSrcRank + " , " + nSrcPile );
 		//UnityEngine.Debug.LogError( "ExcuteBestMoveCommand() - trg rank, pile " + nTrgRank + " , " + nTrgPile );
 		
-		if( board.AIMoveTo( srcPosition, trgPosition ) )
+		if( board.AIMoveTo( srcSquare, trgSquare ) )
 		{	
 			// turn
 			board.CurrTurn = ChessData.GetOppositeSide( board.CurrTurn );

@@ -7,48 +7,75 @@ using System.Collections;
 	
 public struct ChessPosition {
 		
-	public BoardPosition pos;	
-	public BoardPositionType posType;		
+	public BoardPosition pos;
+	public int nRank;
+	public int nPile;
+	public BoardPositionType posType;	
 	
-	
-	public ChessPosition( int nRank, int nPile ) {
+	public ChessPosition( int nPosRank, int nPosPile ) {
 		
-		posType = GetPositionType( nRank, nPile );
-		if( posType != BoardPositionType.eNone ) {
+		this.posType = GetPositionType( nPosRank, nPosPile );
+		if( this.posType != BoardPositionType.eNone ) {
 		
-			pos = (BoardPosition)(nPile * ChessData.nNumRank + nRank);
+			this.nRank = nPosRank;
+			this.nPile = nPosPile;
+			
+			this.pos = (BoardPosition)(nPosPile * ChessData.nNumRank + nPosRank);
 		}
 		else {
 			
-			pos = BoardPosition.InvalidPosition;			
+			this.nRank = -1;
+			this.nPile = -1;
+			this.pos = BoardPosition.InvalidPosition;						
 		}	
 	}
 	
 	public ChessPosition( BoardPosition boardPos ) {
 		
-		posType = GetPositionType( boardPos );
-		if( posType != BoardPositionType.eNone ) {			
-		
-			pos = boardPos;
+		int nPosRank = 0, nPosPile = 0;
+		this.posType = ChessPosition.CalcPositionIndex( boardPos, ref nPosRank, ref nPosPile );
+		if( this.posType != BoardPositionType.eNone ) {				
+			
+			this.nRank = nPosRank;
+			this.nPile = nPosPile;
+			
+			this.pos = boardPos;			
 		}
 		else {
 			
-			pos = BoardPosition.InvalidPosition;				
+			this.nRank = -1;
+			this.nPile = -1;
+			
+			this.pos = BoardPosition.InvalidPosition;			
 		}	
-	}			
+	}
+	
+	public ChessPosition( ChessPosition chessPos ) {
+		
+		this.posType = chessPos.posType;			
+		this.nRank = chessPos.nRank;
+		this.nPile = chessPos.nPile;		
+		this.pos = chessPos.pos;		
+	}		
 	
 	
-	public bool SetPosition( int nRank, int nPile ) {
+	public bool SetPosition( int nPosRank, int nPosPile ) {
 		
-		posType = GetPositionType( nRank, nPile );
-		if( posType != BoardPositionType.eNone ) {
+		this.posType = GetPositionType( nPosRank, nPosPile );
+		if( this.posType != BoardPositionType.eNone ) {
 		
-			pos = (BoardPosition)(nPile * ChessData.nNumRank + nRank);
+			this.nRank = nPosRank;
+			this.nPile = nPosPile;
+			
+			this.pos = (BoardPosition)(nPosPile * ChessData.nNumRank + nPosRank);
 			return true;
 		}
 		else {
 			
-			pos = BoardPosition.InvalidPosition;			
+			this.nRank = -1;
+			this.nPile = -1;
+			
+			this.pos = BoardPosition.InvalidPosition;			
 		}	
 		
 		return false;
@@ -56,15 +83,22 @@ public struct ChessPosition {
 	
 	public bool SetPosition( BoardPosition boardPos ) {
 		
-		posType = GetPositionType( boardPos );
-		if( posType != BoardPositionType.eNone ) {
-		
-			pos = boardPos;
+		int nPosRank = 0, nPosPile = 0;
+		this.posType = ChessPosition.CalcPositionIndex( boardPos, ref nPosRank, ref nPosPile );
+		if( this.posType != BoardPositionType.eNone ) {				
+			
+			this.nRank = nPosRank;
+			this.nPile = nPosPile;
+				
+			this.pos = boardPos;
 			return true;
 		}
 		else {
 			
-			pos = BoardPosition.InvalidPosition;			
+			this.nRank = -1;
+			this.nPile = -1;
+			
+			this.pos = BoardPosition.InvalidPosition;			
 		}	
 		
 		return false;
@@ -72,29 +106,24 @@ public struct ChessPosition {
 	
 	public bool SetPosition( ChessPosition chessPos ) {			
 		
-		if( chessPos.posType != BoardPositionType.eNone ) {
+		this.posType = chessPos.posType;			
+		this.nRank = chessPos.nRank;
+		this.nPile = chessPos.nPile;		
+		this.pos = chessPos.pos;	
 		
-			pos = chessPos.pos;
-			posType = chessPos.posType;
-			return true;
-		}
-		else {
+		if( chessPos.posType == BoardPositionType.eNone ) {		
 			
-			pos = BoardPosition.InvalidPosition;			
-			posType = BoardPositionType.eNone;
-		}	
+			return false;
+		}		
 		
-		return false;
+		return true;
 	}
 	
 	public Vector3 Get3DPosition() {
 		
 		Vector3 vRet = Vector3.zero;
 		if( IsInvalidPos() )
-			return vRet;
-		
-		int nRank = 0, nPile = 0;			
-		GetPositionIndex( ref nRank, ref nPile );
+			return vRet;	
 		
 		vRet.x = nRank - 3.5f;
 		vRet.z = nPile - 3.5f;
@@ -104,11 +133,9 @@ public struct ChessPosition {
 	
 	public bool MovePosition( int nRankMove, int nPileMove ) {			
 				
-		int nMovedRank, nMovedPile, nSrcRank = 0, nSrcPile = 0;
-		GetPositionIndex( ref nSrcRank, ref nSrcPile );			
-		
-		nMovedRank = nSrcRank + nRankMove;
-		nMovedPile = nSrcPile + nPileMove;
+		int nMovedRank, nMovedPile;		
+		nMovedRank = nRank + nRankMove;
+		nMovedPile = nPile + nPileMove;
 			
 		if( nMovedRank >= 0 && nMovedRank < ChessData.nNumRank &&
 			nMovedPile >= 0 && nMovedPile < ChessData.nNumPile ) {
@@ -119,13 +146,16 @@ public struct ChessPosition {
 		
 		pos = BoardPosition.InvalidPosition;
 		posType = BoardPositionType.eNone;
+		nRank = -1;
+		nPile = -1;
 		
 		return false;
 	}
 	
 	public bool IsInvalidPos() {
 		
-		if( pos >= BoardPosition.InvalidPosition || posType == BoardPositionType.eNone )
+		if( pos >= BoardPosition.InvalidPosition || posType == BoardPositionType.eNone ||
+			nRank < 0 || nRank >= ChessData.nNumRank || nPile < 0 || nPile >= ChessData.nNumPile )
 			return true;
 		return false;
 	}		
@@ -196,14 +226,22 @@ public struct ChessPosition {
 	
 	
 	
-	public BoardPositionType GetPositionIndex( ref int nRank, ref int nPile ) {
+	public BoardPositionType GetPositionIndex( ref int nPosRank, ref int nPosPile ) {
 		
-		BoardPositionType retBoardPos = GetPositionType( nRank, nPile );
+		nPosRank = this.nRank;
+		nPosPile = this.nPile;
+		
+		return posType;		
+	}
+	
+	public BoardPositionType CalcPositionIndex( ref int nPosRank, ref int nPosPile ) {
+		
+		BoardPositionType retBoardPos = GetPositionType( nPosRank, nPosPile );
 		if( retBoardPos != BoardPositionType.eNone ) {				
 		
 			int nPos = (int)pos;
-			nRank = nPos % ChessData.nNumRank;
-			nPile = nPos / ChessData.nNumPile;
+			nPosRank = nPos % ChessData.nNumRank;
+			nPosPile = nPos / ChessData.nNumPile;
 		}
 		
 		return retBoardPos;
@@ -212,37 +250,52 @@ public struct ChessPosition {
 	
 	
 	// static function		
-	public static BoardPositionType GetPositionIndex( BoardPosition pos, ref int nRank, ref int nPile ) {
+	public static BoardPositionType CalcPositionIndex( BoardPosition pos, ref int nPosRank, ref int nPosPile ) {
 		
-		BoardPositionType retBoardPos = GetPositionType( nRank, nPile );
+		BoardPositionType retBoardPos = GetPositionType( nPosRank, nPosPile );
 		if( retBoardPos != BoardPositionType.eNone ) {				
 		
 			int nPos = (int)pos;
-			nRank = nPos % ChessData.nNumRank;
-			nPile = nPos / ChessData.nNumPile;
+			nPosRank = nPos % ChessData.nNumRank;
+			nPosPile = nPos / ChessData.nNumPile;
 		}
 		
 		return retBoardPos;
 	}
 	
-	public static BoardPositionType GetPositionType( int nRank, int nPile ) {
+	public static bool CalcPositionIndex( Vector3 vPos, ref int nPosRank, ref int nPosPile ) {		
+	
+		int nBoardWidth = (int)ChessData.fBoardWidth;
+		
+		nPosRank = (int)(vPos.x + 4.0f);																				
+		nPosPile = (int)(vPos.z + 4.0f);	
+		
+		if( nPosRank >= 0 && nPosRank < nBoardWidth && 
+			nPosPile >= 0 && nPosPile < nBoardWidth ) {												
+			
+			return true;
+		}		
+		
+		return false;
+	}
+	
+	public static BoardPositionType GetPositionType( int nPosRank, int nPosPile ) {
 		
 		BoardPositionType retPosType = BoardPositionType.eNone;
-		if( nRank >= 0 && nRank <= ChessData.nNumRank && 
-			nPile >= 0 && nPile <= ChessData.nNumPile ) {
+		if( IsInvalidPositionIndex(nPosRank, nPosPile)== false ) {
 			
 			retPosType |= BoardPositionType.eInside;
 				
-			if( nRank == 0 )
+			if( nPosRank == 0 )
 				retPosType |= BoardPositionType.eLeft;
 			
-			if( nRank == ChessData.nNumRank - 1 )
+			if( nPosRank == ChessData.nNumRank - 1 )
 				retPosType |= BoardPositionType.eRight;
 			
-			if( nPile == 0 )
+			if( nPosPile == 0 )
 				retPosType |= BoardPositionType.eBottom;
 			
-			if( nRank == 0 )
+			if( nPosPile == 0 )
 				retPosType |= BoardPositionType.eTop;								
 		}
 		
@@ -253,60 +306,51 @@ public struct ChessPosition {
 		
 		BoardPositionType retPosType = BoardPositionType.eNone;
 		
-		int nRank = 0, nPile = 0;
-		retPosType = GetPositionIndex( pos, ref nRank, ref nPile );			
+		int nPosRank = 0, nPosPile = 0;
+		retPosType = ChessPosition.CalcPositionIndex( pos, ref nPosRank, ref nPosPile );			
 		return retPosType;			
 	}
 	
-	public static bool GetRankPilePos( Vector3 vPos, ref int nRank, ref int nPile ) {		
-	
-		int nBoardWidth = (int)ChessData.fBoardWidth;
+	public static bool IsInvalidPositionIndex( int nPosRank, int nPosPile ) {
 		
-		nRank = (int)(vPos.x + 4.0f);																				
-		nPile = (int)(vPos.z + 4.0f);	
-		
-		if( nRank >= 0 && nRank < nBoardWidth && 
-			nPile >= 0 && nPile < nBoardWidth ) {												
-			
+		if( (nPosRank < 0 || nPosRank >= ChessData.nNumRank) || (nPosPile < 0 || nPosPile >= ChessData.nNumPile) )
 			return true;
-		}		
-		
 		return false;
-	}
+	}	
+	
 	
 	
 	//
 	public override bool Equals(System.Object obj)
     {
-        // If parameter cannot be cast to ThreeDPoint return false:
-        ChessPosition rho = (ChessPosition)obj;	       
-
-        // Return true if the fields match:
-        return base.Equals(obj) && pos == rho.pos && posType == rho.posType;
+        // If parameter cannot be cast to Chess return false:
+		try {		
+	        	
+	        // Return true if the fields match:
+	        return this == (ChessPosition)obj;	
+		}
+		catch {
+			
+			return false;
+		}
     }
 
     public bool Equals(ChessPosition rho)
-    {
+    {	
         // Return true if the fields match:
-        return base.Equals((System.Object)rho) && pos == rho.pos && posType == rho.posType;
+         return (pos == rho.pos);// && (posType == rho.posType) && (nRank == rho.nRank) && (nPile == rho.nPile));
     }
 	
 	public override int GetHashCode()
     {
-        return base.GetHashCode() ^ (int)pos ^ (int)posType;
+        return (int)pos ^ (int)posType ^ nRank ^ nPile;
     }
 
 	
 	public static bool operator ==( ChessPosition lho, ChessPosition rho )
-	{
-	    // If both are null, or both are same instance, return true.
-	    if (System.Object.ReferenceEquals(lho, rho))
-	    {
-	        return true;
-	    }			    
-	
+	{	    
 	    // Return true if the fields match:
-	    return lho.pos == rho.pos && lho.posType == rho.posType;
+	    return (lho.pos == rho.pos);// && (lho.posType == rho.posType) && (lho.nRank == rho.nPile) && (lho.nRank == rho.nPile));
 	}
 	
 	public static bool operator !=( ChessPosition lho, ChessPosition rho)
